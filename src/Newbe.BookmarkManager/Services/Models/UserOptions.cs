@@ -11,6 +11,8 @@ namespace Newbe.BookmarkManager.Services
         public CloudBkFeature? CloudBkFeature { get; set; }
         public HotTagsFeature? HotTagsFeature { get; set; }
         public ApplicationInsightFeature? ApplicationInsightFeature { get; set; }
+
+        public BackgroundImageFeature? BackgroundImageFeature { get; set; }
     }
 
     public record PinyinFeature
@@ -36,5 +38,11 @@ namespace Newbe.BookmarkManager.Services
     public record ApplicationInsightFeature
     {
         public bool Enabled { get; set; }
+    }
+
+    public record BackgroundImageFeature
+    {
+        public bool Enabled { get; set; }
+        public string? BaseUrl { get; set; }
     }
 }

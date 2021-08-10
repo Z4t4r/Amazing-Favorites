@@ -72,6 +72,11 @@ namespace Newbe.BookmarkManager.Services
                 Enabled = false
             };
 
+            options.BackgroundImageFeature ??= new BackgroundImageFeature
+            {
+                Enabled = false
+            };
+
             return options;
         }
     }

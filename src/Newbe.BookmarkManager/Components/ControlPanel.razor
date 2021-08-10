@@ -3,6 +3,7 @@
 @using WebExtensions.Net.Tabs
 @using System.Text.Json
 @using System.Text
+@inject IJSRuntime JS
 <Modal Title="@("Control Panel")"
        Visible="@Visible"
        OnOk="@HandleUserOptionsOk"
@@ -17,43 +18,41 @@
         @if (context.AcceptPrivacyAgreement)
         {
             <FormItem Label="👋 Anonymous Improving">
-                <Switch @bind-Value="@context.ApplicationInsightFeature.Enabled"/>
+                <Switch @bind-Value="@context.ApplicationInsightFeature.Enabled" />
                 <p>👋 Recommended to enable</p>
                 <p>Collecting fully anonymous application performance and error logs helps us to continually strive to provide you with better applications. When enabled, we will collect information about the application's errors, the time spent on each operation, and other data that is not related to personal information. </p>
                 <p>Modifying the options will only take effect after you restart your browser</p>.
             </FormItem>
             <FormItem Label="🌏 Enable Pinyin">
-                <Switch @bind-Value="@context.PinyinFeature.Enabled"/>
+                <Switch @bind-Value="@context.PinyinFeature.Enabled" />
             </FormItem>
             @if (context.PinyinFeature.Enabled)
             {
                 <FormItem Label="Access Token">
                     <TextArea @bind-Value="@context.PinyinFeature.AccessToken" />
                     <p>
-                        <Icon Type="question" Theme="outline"/>
+                        <Icon Type="question" Theme="outline" />
                         You can get an access token from <a href="https://user.newbe.pro/Identity/Account/Manage/AccessToken" target="_blank">user.newbe.pro</a>.
                     </p>
-
                 </FormItem>
                 <FormItem Label="Pinyin Api BaseUrl">
-                    <Input @bind-Value="@context.PinyinFeature.BaseUrl"/>
+                    <Input @bind-Value="@context.PinyinFeature.BaseUrl" />
                 </FormItem>
             }
             <FormItem Label="☁ Enable Cloud Sync">
-                <Switch @bind-Value="@context.CloudBkFeature.Enabled"/>
+                <Switch @bind-Value="@context.CloudBkFeature.Enabled" />
             </FormItem>
             @if (context.CloudBkFeature.Enabled)
             {
                 <FormItem Label="Access Token">
                     <TextArea @bind-Value="@context.CloudBkFeature.AccessToken" />
                     <p>
-                        <Icon Type="question" Theme="outline"/>
+                        <Icon Type="question" Theme="outline" />
                         You can get an access token from <a href="https://user.newbe.pro/Identity/Account/Manage/AccessToken" target="_blank">user.newbe.pro</a>.
                     </p>
-
                 </FormItem>
                 <FormItem Label="Cloud Sync Api BaseUrl">
-                    <Input @bind-Value="@context.CloudBkFeature.BaseUrl"/>
+                    <Input @bind-Value="@context.CloudBkFeature.BaseUrl" />
                 </FormItem>
             }
         }
@@ -70,7 +69,7 @@
             </FormItem>
         }
         <FormItem Label="🔥 Enable Hot Tags">
-            <Switch @bind-Value="@context.HotTagsFeature.Enabled"/>
+            <Switch @bind-Value="@context.HotTagsFeature.Enabled" />
         </FormItem>
         @if (context.HotTagsFeature.Enabled)
         {
@@ -78,12 +77,21 @@
                 <AntDesign.InputNumber @bind-Value="@context.HotTagsFeature.ListCount"
                                        Min="1"
                                        Max="100"
-                                       DefaultValue="10"/>
+                                       DefaultValue="10" />
             </FormItem>
         }
         <FormItem Label="System Actions">
             <Button OnClick="OnClickDumpDataAsync">Dump data to console</Button>
             <Button OnClick="OnClickResumeFactorySetting" Danger>Resume factory setting of Amazing Favirotes</Button>
+        </FormItem>
+        <FormItem Label="Background Image">
+            <Switch @bind-Value="@context.BackgroundImageFeature.Enabled" />
+            @if (context.BackgroundImageFeature.Enabled)
+            {
+                <FormItem Label="Background Image BaseUrl">
+                    <Input @bind-Value="@context.BackgroundImageFeature.BaseUrl" />
+                </FormItem>
+            }
         </FormItem>
     </Form>
 </Modal>
@@ -131,6 +139,7 @@
         public CloudBkFeature CloudBkFeature { get; set; }
         public HotTagsFeature HotTagsFeature { get; set; }
         public ApplicationInsightFeature ApplicationInsightFeature { get; set; }
+        public BackgroundImageFeature BackgroundImageFeature { get; set; }
     }
 
     private async Task OnClickDumpDataAsync()
@@ -172,6 +181,7 @@
             CloudBkFeature = _modal.CloudBkFeature,
             ApplicationInsightFeature = _modal.ApplicationInsightFeature,
             HotTagsFeature = _modal.HotTagsFeature,
+            BackgroundImageFeature = _modal.BackgroundImageFeature
         });
     }
 
@@ -188,7 +198,8 @@
             PinyinFeature = _modal.PinyinFeature,
             CloudBkFeature = _modal.CloudBkFeature,
             HotTagsFeature = _modal.HotTagsFeature,
-            ApplicationInsightFeature = _modal.ApplicationInsightFeature
+            ApplicationInsightFeature = _modal.ApplicationInsightFeature,
+            BackgroundImageFeature = _modal.BackgroundImageFeature
         };
         await UserOptionsService.SaveAsync(userOptions);
         await OnUserOptionSave.InvokeAsync(new OnUserOptionSaveArgs(userOptions));
@@ -212,6 +223,7 @@
         _modal.CloudBkFeature = options.CloudBkFeature;
         _modal.HotTagsFeature = options.HotTagsFeature;
         _modal.ApplicationInsightFeature = options.ApplicationInsightFeature;
+        _modal.BackgroundImageFeature = options.BackgroundImageFeature;
         _modal.AcceptPrivacyAgreement = options.AcceptPrivacyAgreement == true;
     }
 
@@ -221,4 +233,9 @@
         await LoadUserOptions();
     }
 
+    private async Task OnChangeBackgroundImage()
+    {
+        //await JS.InvokeVoidAsync("applyStyleForElement",
+        //new { id = "sortColumn", value = "newClassName" });
+    }
 }
