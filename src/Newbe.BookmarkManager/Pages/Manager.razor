@@ -31,7 +31,7 @@
         </Row>
     </Header>
     <Content>
-        <Row Class="site-layout-content">
+        <Row Class="@((_userOptions?.BackgroundImageFeature?.Enabled == true)?"site-layout-content":"")">
             <Col Span="24">
             <AntList Bordered DataSource="@_targetBks">
                 <Header>
