@@ -8,15 +8,11 @@ namespace Newbe.BookmarkManager.Pages
 {
     public partial class Background : IAsyncDisposable
     {
-        [Inject] public IJSRuntime JsRuntime { get; set; }
-        [Inject] public ISyncBookmarkJob SyncBookmarkJob { get; set; }
-        [Inject] public ISyncAliasJob SyncAliasJob { get; set; }
-        [Inject] public ISyncCloudJob SyncCloudJob { get; set; }
-        [Inject] public IDataFixJob DataFixJob { get; set; }
-        [Inject] public ISyncTagRelatedBkCountJob SyncTagRelatedBkCountJob { get; set; }
-        [Inject] public IUserOptionsService UserOptionsService { get; set; }
+        [Inject] public IJSRuntime JsRuntime { get; set; } = null!;
+        [Inject] public IUserOptionsService UserOptionsService { get; set; } = null!;
+        [Inject] public IJobHost JobHost { get; set; }
 
-        private JsModuleLoader _moduleLoader;
+        private JsModuleLoader _moduleLoader = null!;
 
         [JSInvokable]
         public void OnReceivedCommand(string command)
@@ -35,18 +31,21 @@ namespace Newbe.BookmarkManager.Pages
                 _moduleLoader = new JsModuleLoader(JsRuntime);
                 await _moduleLoader.LoadAsync("/content/background_keyboard.js");
                 var userOptions = await UserOptionsService.GetOptionsAsync();
-                if (userOptions.ApplicationInsightFeature?.Enabled == true)
+                if (userOptions is
+                    {
+                        AcceptPrivacyAgreement: true,
+                        ApplicationInsightFeature:
+                        {
+                            Enabled: true
+                        }
+                    })
                 {
                     await _moduleLoader.LoadAsync("/content/ai.js");
                 }
 
                 var lDotNetReference = DotNetObjectReference.Create(this);
                 await JsRuntime.InvokeVoidAsync("DotNet.SetDotnetReference", lDotNetReference);
-                await DataFixJob.StartAsync();
-                await SyncBookmarkJob.StartAsync();
-                await SyncAliasJob.StartAsync();
-                await SyncCloudJob.StartAsync();
-                await SyncTagRelatedBkCountJob.StartAsync();
+                await JobHost.StartAsync();
             }
         }
 

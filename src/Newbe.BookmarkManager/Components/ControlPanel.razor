@@ -3,20 +3,26 @@
 @using WebExtensions.Net.Tabs
 @using System.Text.Json
 @using System.Text
+<<<<<<< HEAD
 @inject IJSRuntime JS
+=======
+@using Microsoft.Extensions.Options
+@using Newbe.BookmarkManager.Services.Configuration
+@using Newbe.BookmarkManager.Services.EventHubs
+@using Newbe.BookmarkManager.Services.SimpleData
+>>>>>>> main
 <Modal Title="@("Control Panel")"
        Visible="@Visible"
        OnOk="@HandleUserOptionsOk"
        OnCancel="@HandleUserOptionsCancel"
        AfterClose="OnAfterClose"
        MaskClosable="false"
+       DestroyOnClose="true"
        Width="1200">
-    <Form Model="@_modal"
-          LabelColSpan="4"
-          WrapperColSpan="20"
-          Size="Default">
-        @if (context.AcceptPrivacyAgreement)
+    <Collapse ExpandIcon="caret-right" Bordered="false">
+        @if (_modal.AcceptPrivacyAgreement)
         {
+<<<<<<< HEAD
             <FormItem Label="👋 Anonymous Improving">
                 <Switch @bind-Value="@context.ApplicationInsightFeature.Enabled" />
                 <p>👋 Recommended to enable</p>
@@ -55,19 +61,26 @@
                     <Input @bind-Value="@context.CloudBkFeature.BaseUrl" />
                 </FormItem>
             }
+=======
+            <ApplicationInsightPanel UserOptions="_modal"></ApplicationInsightPanel>
+            <CloudBkPanel UserOptions="_modal"></CloudBkPanel>
+            <PinyinPanel UserOptions="_modal"></PinyinPanel>
+>>>>>>> main
         }
         else
         {
-            <FormItem Label="User Privacy Agreement">
-                <p>The following features may transfer some data to cloud servers, so please <a href="https://af.newbe.pro/docs/00-1-Privacy" target="_blank">click here</a>, read and understand our User Privacy Agreement. After you confirm and agree to the content of the agreement click the button below to enable the advanced features.</p>
+            <Panel Header="User Privacy Agreement"
+                   Active="true">
+                <p>The following features may transfer some data to cloud servers, so please <a href="@StaticUrlOptions.Value.PrivacyAgreement" target="_blank">click here</a>, read and understand our User Privacy Agreement. After you confirm and agree to the content of the agreement click the button below to enable the advanced features.</p>
                 <p>Feature shows as below:</p>
                 <ul>
                     <li>Pinyin Support. You could search your bookmark title and your tags by PinYin</li>
                     <li>Tags Cloud Sync. You could sync your bookmark tags in multiple device</li>
                 </ul>
                 <Button OnClick="OnClickAgreeUserPrivacyAgreement" Type="primary">I agree to the User Privacy Agreement</Button>
-            </FormItem>
+            </Panel>
         }
+<<<<<<< HEAD
         <FormItem Label="🔥 Enable Hot Tags">
             <Switch @bind-Value="@context.HotTagsFeature.Enabled" />
         </FormItem>
@@ -94,6 +107,11 @@
             }
         </FormItem>
     </Form>
+=======
+        <HotTagsPanel UserOptions="_modal"></HotTagsPanel>
+        <SystemActionsPanel></SystemActionsPanel>
+    </Collapse>
+>>>>>>> main
 </Modal>
 
 @code {
@@ -102,24 +120,29 @@
     public IUserOptionsService UserOptionsService { get; set; }
 
     [Inject]
-    public ITabsApi TabsApi { get; set; }
+    public IAfEventHub AfEventHub { get; set; }
 
     [Inject]
-    public IIndexedDbRepo<Bk, string> BkRepo { get; set; }
-
-    [Inject]
-    public IIndexedDbRepo<UserOptions, string> UserOptionsRepo { get; set; }
-
-    [Inject]
-    public IIndexedDbRepo<BkTag, string> BkTagRepo { get; set; }
-
-    [Inject]
-    public IIndexedDbRepo<BkMetadata, string> BkMetadataRepo { get; set; }
+    public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
 
     private ModalModel _modal = new();
+    private bool _visible;
+    private OneDriveStatics _oneDriveStatics = new();
+    private GoogleDriveStatics _googleDriveStatics = new();
 
     [Parameter]
-    public bool Visible { get; set; }
+    public bool Visible
+    {
+        get => _visible;
+        set
+        {
+            _visible = value;
+            if (value)
+            {
+                InvokeAsync(LoadUserOptions);
+            }
+        }
+    }
 
     [Parameter]
     public virtual EventCallback<bool> VisibleChanged { get; set; }
@@ -142,38 +165,10 @@
         public BackgroundImageFeature BackgroundImageFeature { get; set; }
     }
 
-    private async Task OnClickDumpDataAsync()
-    {
-        var bks = await BkRepo.GetAllAsync();
-        var tags = await BkTagRepo.GetAllAsync();
-        var userOptions = await UserOptionsRepo.GetAllAsync();
-        var bkMetadata = await BkMetadataRepo.GetAllAsync();
-        var dumpData = new DumpData
-        {
-            Bks = bks,
-            Tags = tags,
-            UserOptions = userOptions,
-            BkMetadata = bkMetadata
-        };
-        var json = JsonSerializer.Serialize(dumpData, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-        var base64String = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
-        await TabsApi.ActiveOrOpenAsync($"data:application/octet-stream;name=data.json;base64,{base64String}");
-    }
-
-    public record DumpData
-    {
-        public List<Bk> Bks { get; init; }
-        public List<BkTag> Tags { get; init; }
-        public List<UserOptions> UserOptions { get; init; }
-        public List<BkMetadata> BkMetadata { get; init; }
-    }
-
     private async Task OnClickAgreeUserPrivacyAgreement()
     {
         _modal.AcceptPrivacyAgreement = true;
+<<<<<<< HEAD
         await UserOptionsService.SaveAsync(new UserOptions
         {
             AcceptPrivacyAgreement = _modal.AcceptPrivacyAgreement,
@@ -183,6 +178,10 @@
             HotTagsFeature = _modal.HotTagsFeature,
             BackgroundImageFeature = _modal.BackgroundImageFeature
         });
+=======
+        var userOptions = MapToUserOptions();
+        await UserOptionsService.SaveAsync(userOptions);
+>>>>>>> main
     }
 
     private async Task CloseControlPanel()
@@ -192,18 +191,32 @@
 
     private async Task HandleUserOptionsOk(MouseEventArgs e)
     {
+        var userOptions = MapToUserOptions();
+
+        await UserOptionsService.SaveAsync(userOptions);
+        await AfEventHub.PublishAsync(new UserOptionSaveEvent
+        {
+            UserOptions = userOptions,
+        });
+        await OnUserOptionSave.InvokeAsync(new OnUserOptionSaveArgs(userOptions));
+        await CloseControlPanel();
+    }
+
+    private UserOptions MapToUserOptions()
+    {
         var userOptions = new UserOptions
         {
-            AcceptPrivacyAgreement = _modal.AcceptPrivacyAgreement,
+            AcceptPrivacyAgreementVersion = _modal.AcceptPrivacyAgreement
+                ? Consts.PrivacyAgreementVersionDate
+                : string.Empty,
+            AcceptPrivacyAgreementBefore = _modal.AcceptPrivacyAgreement,
             PinyinFeature = _modal.PinyinFeature,
             CloudBkFeature = _modal.CloudBkFeature,
             HotTagsFeature = _modal.HotTagsFeature,
             ApplicationInsightFeature = _modal.ApplicationInsightFeature,
             BackgroundImageFeature = _modal.BackgroundImageFeature
         };
-        await UserOptionsService.SaveAsync(userOptions);
-        await OnUserOptionSave.InvokeAsync(new OnUserOptionSaveArgs(userOptions));
-        await CloseControlPanel();
+        return userOptions;
     }
 
     private async Task HandleUserOptionsCancel(MouseEventArgs e)
@@ -223,8 +236,12 @@
         _modal.CloudBkFeature = options.CloudBkFeature;
         _modal.HotTagsFeature = options.HotTagsFeature;
         _modal.ApplicationInsightFeature = options.ApplicationInsightFeature;
+<<<<<<< HEAD
         _modal.BackgroundImageFeature = options.BackgroundImageFeature;
         _modal.AcceptPrivacyAgreement = options.AcceptPrivacyAgreement == true;
+=======
+        _modal.AcceptPrivacyAgreement = options.AcceptPrivacyAgreement;
+>>>>>>> main
     }
 
     protected override async Task OnInitializedAsync()
@@ -233,9 +250,13 @@
         await LoadUserOptions();
     }
 
+<<<<<<< HEAD
     private async Task OnChangeBackgroundImage()
     {
         //await JS.InvokeVoidAsync("applyStyleForElement",
         //new { id = "sortColumn", value = "newClassName" });
     }
+=======
+
+>>>>>>> main
 }

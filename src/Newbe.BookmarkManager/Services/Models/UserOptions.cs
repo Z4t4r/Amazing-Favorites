@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Newbe.BookmarkManager.Services
 {
@@ -6,7 +7,10 @@ namespace Newbe.BookmarkManager.Services
     public record UserOptions : IEntity<string>
     {
         public string Id => Consts.SingleOneDataId;
-        public bool? AcceptPrivacyAgreement { get; set; }
+
+        public bool AcceptPrivacyAgreement => AcceptPrivacyAgreementVersion == Consts.PrivacyAgreementVersionDate;
+        public bool AcceptPrivacyAgreementBefore { get; set; }
+        public string AcceptPrivacyAgreementVersion { get; set; } = string.Empty;
         public PinyinFeature? PinyinFeature { get; set; }
         public CloudBkFeature? CloudBkFeature { get; set; }
         public HotTagsFeature? HotTagsFeature { get; set; }
@@ -20,6 +24,8 @@ namespace Newbe.BookmarkManager.Services
         public bool Enabled { get; set; }
         public string? BaseUrl { get; set; }
         public string? AccessToken { get; set; }
+
+        public DateTime? ExpireDate { get; set; }
     }
 
     public record CloudBkFeature
@@ -27,6 +33,16 @@ namespace Newbe.BookmarkManager.Services
         public bool Enabled { get; set; }
         public string? BaseUrl { get; set; }
         public string? AccessToken { get; set; }
+
+        public DateTime? ExpireDate { get; set; }
+        public CloudBkProviderType CloudBkProviderType { get; set; }
+    }
+
+    public enum CloudBkProviderType
+    {
+        NewbeApi,
+        GoogleDrive,
+        OneDrive
     }
 
     public record HotTagsFeature

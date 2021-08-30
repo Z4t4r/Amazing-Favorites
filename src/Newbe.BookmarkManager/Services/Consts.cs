@@ -1,16 +1,33 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Newbe.BookmarkManager.Services
 {
     public static class Consts
     {
+        public const string AppName = "Amazing Favorites";
+        public const string CurrentVersion = "0.6.2";
+        public const string PrivacyAgreementVersionDate = "2021/08/29";
+
+        public static readonly string[] Versions =
+        {
+            CurrentVersion
+        };
+
+        public const int JwtExpiredWarningDays = 7;
+
         public static class Commands
         {
             public const string OpenManager = "open-manager-ui";
         }
 
-        public const string ManagerTabTitle = "Amazing Favorites";
-        public const string AmazingFavoriteFolderName = "Amazing Favorites";
+        public static class Cloud
+        {
+            public const string CloudDataFileName = "af.data.json";
+        }
+
+        public const string ManagerTabTitle = AppName;
+        public const string AmazingFavoriteFolderName = AppName;
 
         public const string AfCodeSchemaPrefix = "af://";
         public const string DbName = "Amazing Favorites";
@@ -23,6 +40,10 @@ namespace Newbe.BookmarkManager.Services
             public const string BkMetadata = "BkMetadata";
             public const string Tags = "Tags";
             public const string UserOptions = "UserOptions";
+            public const string AfMetadata = "AfMetadata";
+            public const string SearchRecord = "SearchRecord";
+            [Obsolete("use simple data")] public const string RecentSearch = "RecentSearch";
+            public const string SimpleData = "SimpleData";
         }
 
         private static readonly HashSet<string> ReservedBookmarkFolder = new()

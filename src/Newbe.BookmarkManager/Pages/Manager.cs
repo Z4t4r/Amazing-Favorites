@@ -11,9 +11,12 @@ using AntDesign;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 using Newbe.BookmarkManager.Components;
 using Newbe.BookmarkManager.Services;
+using Newbe.BookmarkManager.Services.Configuration;
+using Newbe.BookmarkManager.Services.EventHubs;
 using WebExtensions.Net.Tabs;
 
 namespace Newbe.BookmarkManager.Pages
@@ -28,6 +31,15 @@ namespace Newbe.BookmarkManager.Pages
         [Inject] public IUserOptionsService UserOptionsService { get; set; }
         [Inject] public IBkEditFormData BkEditFormData { get; set; }
         [Inject] public IAfCodeService AfCodeService { get; set; }
+        [Inject] public IManagePageNotificationService ManagePageNotificationService { get; set; }
+        [Inject] public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
+        [Inject] public IOptions<DevOptions> DevOptions { get; set; }
+        [Inject] public IRecordService RecordService { get; set; }
+        [Inject] public IRecentSearchHolder RecentSearchHolder { get; set; }
+        [Inject] public IAfEventHub AfEventHub { get; set; }
+
+        [Inject]
+        public NavigationManager Navigation { get; set; }
 
         private BkViewItem[] _targetBks = Array.Empty<BkViewItem>();
 
@@ -46,14 +58,29 @@ namespace Newbe.BookmarkManager.Pages
         private readonly Subject<string?> _searchSubject = new();
         private readonly Subject<bool> _altKeySubject = new();
         private readonly Subject<string> _updateFaviconSubject = new();
-        private IDisposable _searchPlaceHolderHandler;
-        private IDisposable _updateFaviconHandler;
+        private readonly Subject<OnSearchResultClickArgs> _userUrlClickSubject = new();
+        private readonly List<IDisposable> _subjectHandlers = new();
         private readonly int _resultLimit = 10;
-        private bool _controlPanelVisible;
-        private Search _search;
+        private AutoCompleteSearch _search;
+
+        private IEnumerable<string> SearchOptions
+        {
+            get
+            {
+                return RecentSearchHolder?.RecentSearch?.Items?.Select(x => x.Text)
+                       ?? Array.Empty<string>();
+            }
+        }
+
         private string[] _allTags = Array.Empty<string>();
         private string _searchValue;
         private bool _modalVisible;
+
+        public record OnSearchResultClickArgs
+        {
+            public string SearchText { get; set; }
+            public BkViewItem ClickItem { get; set; }
+        }
 
         [JSInvokable]
         public async Task OnReceivedCommand(string command)
@@ -70,6 +97,7 @@ namespace Newbe.BookmarkManager.Pages
         protected override async Task OnInitializedAsync()
         {
             await base.OnInitializedAsync();
+            await RecentSearchHolder.LoadAsync();
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -80,7 +108,14 @@ namespace Newbe.BookmarkManager.Pages
                 _moduleLoader = new JsModuleLoader(JsRuntime);
                 await _moduleLoader.LoadAsync("/content/manager_keyboard.js");
                 var userOptions = await UserOptionsService.GetOptionsAsync();
-                if (userOptions.ApplicationInsightFeature?.Enabled == true)
+                if (userOptions is
+                    {
+                        AcceptPrivacyAgreement: true,
+                        ApplicationInsightFeature:
+                        {
+                            Enabled: true
+                        }
+                    })
                 {
                     await _moduleLoader.LoadAsync("/content/ai.js");
                 }
@@ -140,39 +175,86 @@ namespace Newbe.BookmarkManager.Pages
                         StateHasChanged();
                     });
 
-                _updateFaviconHandler = _updateFaviconSubject
-                    .Subscribe(async url =>
+                var subjectHandler = _userUrlClickSubject.Subscribe(bk =>
+                {
+                    _updateFaviconSubject.OnNext(bk.ClickItem.Bk.Url);
+                });
+                _subjectHandlers.Add(subjectHandler);
+                subjectHandler = _userUrlClickSubject.Subscribe(bk =>
+                {
+                    BkManager.AddClickAsync(bk.ClickItem.Bk.Url, 1);
+                });
+                _subjectHandlers.Add(subjectHandler);
+                subjectHandler = _userUrlClickSubject
+                    .Select(item =>
+                        Observable.FromAsync(() => RecentSearchHolder.AddAsync(item.SearchText)))
+                    .Concat()
+                    .Subscribe();
+                _subjectHandlers.Add(subjectHandler);
+                subjectHandler = _userUrlClickSubject.Subscribe(item =>
+                {
+                    var bk = item.ClickItem;
+                    RecordService.AddAsync(new UserClickRecord
                     {
-                        try
-                        {
-                            await Task.Delay(TimeSpan.FromSeconds(5));
-                            var tabs = await WebExtensions.Tabs.Query(new QueryInfo
-                            {
-                                Url = url
-                            });
-                            var tabNow = tabs.FirstOrDefault();
-                            if (tabNow != null &&
-                                !string.IsNullOrWhiteSpace(tabNow.FavIconUrl))
-                            {
-                                Logger.LogInformation("success to get favicon url");
-                                await BkManager.UpdateFavIconUrlAsync(new Dictionary<string, string>
-                                {
-                                    { url, tabNow.FavIconUrl }
-                                });
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            // ignored
-                        }
+                        Index = bk.LineIndex,
+                        Url = bk.Bk.Url,
+                        Title = bk.Bk.Title,
+                        Search = SearchValue,
+                        Tags = string.Join(",", ((IEnumerable<string>?)bk.Bk.Tags) ?? Array.Empty<string>())
                     });
+
+                    InvokeAsync(() =>
+                    {
+                        SearchValue = string.Empty;
+                        _searchSubject.OnNext(null);
+                    });
+                });
+                _subjectHandlers.Add(subjectHandler);
+
+                subjectHandler = _updateFaviconSubject
+                    .Subscribe(url =>
+                    {
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await Task.Delay(TimeSpan.FromSeconds(5));
+                                var tabs = await WebExtensions.Tabs.Query(new QueryInfo
+                                {
+                                    Url = url
+                                });
+                                var tabNow = tabs.FirstOrDefault();
+                                if (tabNow != null &&
+                                    !string.IsNullOrWhiteSpace(tabNow.FavIconUrl))
+                                {
+                                    Logger.LogInformation("success to get favicon url");
+                                    await BkManager.UpdateFavIconUrlAsync(new Dictionary<string, string>
+                                    {
+                                        { url, tabNow.FavIconUrl }
+                                    });
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                // ignored
+                            }
+                        });
+                    });
+                _subjectHandlers.Add(subjectHandler);
+
                 _allTags = await TagsManager.GetAllTagsAsync();
                 _userOptions = userOptions;
 
                 await WebExtensions.Runtime.OnMessage.AddListener((o, sender, arg3) =>
                 {
-                    HandleNewBookmarkAddedEvent(o);
-                    return true;
+                    var evt = JsonSerializer.Deserialize<NewBkAddEvent>(JsonSerializer.Serialize(o))!;
+                    if (!string.IsNullOrEmpty(evt.Url))
+                    {
+                        HandleNewBookmarkAddedEvent(evt);
+                        return true;
+                    }
+
+                    return false;
                 });
 
                 var editTabIdStr = QueryString(NavigationManager, "editTabId");
@@ -190,7 +272,20 @@ namespace Newbe.BookmarkManager.Pages
                         }
                     }
                 }
+
+                await ManagePageNotificationService.RunAsync();
+                AfEventHub.RegisterHandler<UserOptionSaveEvent>(HandleUserOptionSaveEvent);
+                await AfEventHub.EnsureStartAsync();
             }
+        }
+
+        private Task HandleUserOptionSaveEvent(UserOptionSaveEvent arg)
+        {
+            return InvokeAsync(() =>
+            {
+                _userOptions = arg.UserOptions;
+                StateHasChanged();
+            });
         }
 
         private static string QueryString(NavigationManager nav, string paramName)
@@ -207,9 +302,8 @@ namespace Newbe.BookmarkManager.Pages
             [JsonPropertyName("tabId")] public int TabId { get; set; }
         }
 
-        private async Task HandleNewBookmarkAddedEvent(object arg1)
+        private async Task HandleNewBookmarkAddedEvent(NewBkAddEvent evt)
         {
-            var evt = JsonSerializer.Deserialize<NewBkAddEvent>(JsonSerializer.Serialize(arg1))!;
             Logger.LogInformation("Received : {Event}", evt);
             await BkEditFormData.LoadAsync(evt.Url, evt.Title, Array.Empty<string>());
             _modalVisible = true;
@@ -283,10 +377,11 @@ namespace Newbe.BookmarkManager.Pages
                 await WebExtensions.Tabs.ActiveOrOpenAsync(url);
             }
 
-            _updateFaviconSubject.OnNext(url);
-            await BkManager.AddClickAsync(url, 1);
-            SearchValue = string.Empty;
-            _searchSubject.OnNext(null);
+            _userUrlClickSubject.OnNext(new OnSearchResultClickArgs
+            {
+                ClickItem = bk,
+                SearchText = SearchValue
+            });
         }
 
         private async Task OnRemovingTag(Bk bk, string tag)
@@ -316,28 +411,6 @@ namespace Newbe.BookmarkManager.Pages
             _allTags = await TagsManager.GetAllTagsAsync();
             await BkManager.AppendTagAsync(bk.Bk.Url, newTags);
             SearchValue = _searchValue;
-        }
-
-        private async Task OpenHelp()
-        {
-            await WebExtensions.Tabs.OpenAsync("https://af.newbe.pro/");
-        }
-
-        private async Task OpenControlPanel()
-        {
-            _controlPanelVisible = true;
-        }
-
-        private async Task OnClickResumeFactorySetting()
-        {
-            await BkManager.RestoreAsync();
-            SearchValue = _searchValue;
-            _controlPanelVisible = false;
-        }
-
-        private void OnUserOptionSave(ControlPanel.OnUserOptionSaveArgs args)
-        {
-            _userOptions = args.Options;
         }
 
         #region Modal
@@ -419,7 +492,7 @@ namespace Newbe.BookmarkManager.Pages
             }
         }
 
-        #endregion
+        #endregion Modal
 
         #region AfCode
 
@@ -432,10 +505,15 @@ namespace Newbe.BookmarkManager.Pages
             _afCodeSharingPanelVisible = true;
         }
 
-        #endregion
+        #endregion AfCode
 
         public async ValueTask DisposeAsync()
         {
+            foreach (var subjectHandler in _subjectHandlers)
+            {
+                subjectHandler.Dispose();
+            }
+
             await _moduleLoader.DisposeAsync();
         }
     }

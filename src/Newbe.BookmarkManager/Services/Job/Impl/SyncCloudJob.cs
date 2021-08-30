@@ -1,17 +1,22 @@
 ﻿using System;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.EventHubs;
 
 namespace Newbe.BookmarkManager.Services
 {
     public partial class SyncCloudJob : ISyncCloudJob
     {
-        private readonly ILogger<SyncCloudJob> _logger;
+        private readonly ILogger _logger;
         private readonly IBkManager _bkManager;
         private readonly IUserOptionsService _userOptionsService;
-        private readonly ICloudService _cloudService;
+        private readonly ICloudServiceFactory _cloudServiceFactory;
+        private readonly IAfEventHub _afEventHub;
+        private readonly IClock _clock;
+        private Subject<long> _eventSubject = new();
 
         // ReSharper disable once NotAccessedField.Local
         private IDisposable _jobHandler;
@@ -20,18 +25,24 @@ namespace Newbe.BookmarkManager.Services
             ILogger<SyncCloudJob> logger,
             IBkManager bkManager,
             IUserOptionsService userOptionsService,
-            ICloudService cloudService)
+            ICloudServiceFactory cloudServiceFactory,
+            IAfEventHub afEventHub,
+            IClock clock)
         {
             _logger = logger;
             _bkManager = bkManager;
             _userOptionsService = userOptionsService;
-            _cloudService = cloudService;
+            _cloudServiceFactory = cloudServiceFactory;
+            _afEventHub = afEventHub;
+            _clock = clock;
         }
 
         public async ValueTask StartAsync()
         {
-            await Task.Delay(TimeSpan.FromSeconds(5));
-            _jobHandler =  new[] {1L}.ToObservable()
+            _afEventHub.RegisterHandler<TriggerCloudSyncEvent>(HandleTriggerCloudSyncEvent);
+            await _afEventHub.EnsureStartAsync();
+            _eventSubject.OnNext(_clock.UtcNow);
+            _jobHandler = _eventSubject
                 .Concat(Observable.Interval(TimeSpan.FromMinutes(10)))
                 .Buffer(TimeSpan.FromSeconds(5), 50)
                 .Where(x => x.Count > 0)
@@ -44,27 +55,43 @@ namespace Newbe.BookmarkManager.Services
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e, "Faile");
+                        _logger.LogError(e, "Failed");
                     }
                 }))
                 .Concat()
                 .Subscribe();
         }
 
+        private Task HandleTriggerCloudSyncEvent(TriggerCloudSyncEvent arg)
+        {
+            _eventSubject.OnNext(_clock.UtcNow);
+            return Task.CompletedTask;
+        }
+
         private async Task RunSyncAsync()
         {
+            var cloudService = await _cloudServiceFactory.CreateAsync();
             var options = await _userOptionsService.GetOptionsAsync();
-            if (options.CloudBkFeature?.Enabled == true)
+            if (options is
+                {
+                    AcceptPrivacyAgreement: true,
+                    CloudBkFeature:
+                    {
+                        Enabled: true,
+                        AccessToken: not null,
+                        BaseUrl: not null
+                    }
+                })
             {
                 var etagVersion = await _bkManager.GetEtagVersionAsync();
-                var (hasChanged, output) = await _cloudService.GetCloudAsync(etagVersion);
+                var (hasChanged, output) = await cloudService.GetCloudAsync(etagVersion);
                 if (hasChanged)
                 {
                     if (output!.EtagVersion > etagVersion)
                     {
                         // sync to local
                         await _bkManager.LoadCloudCollectionAsync(output.CloudBkCollection!);
-                        LogSyncToLocal(_logger, output.EtagVersion, output.LastUpdateTime);
+                        LogSyncToLocal(output.EtagVersion, output.LastUpdateTime);
                     }
                     else if (output.EtagVersion < etagVersion)
                     {
@@ -72,20 +99,21 @@ namespace Newbe.BookmarkManager.Services
                         var cloudBkCollection = await _bkManager.GetCloudBkCollectionAsync();
                         if (cloudBkCollection.Bks.Count > 0)
                         {
-                            await _cloudService.SaveToCloudAsync(cloudBkCollection);
-                            LogSyncToCloud(_logger,
+                            await cloudService.SaveToCloudAsync(cloudBkCollection);
+                            await _afEventHub.PublishAsync(new SyncToCloudSuccessEvent());
+                            LogSyncToCloud(
                                 cloudBkCollection.EtagVersion,
                                 cloudBkCollection.LastUpdateTime);
                         }
                         else
                         {
-                            LogNoBkFoundToSync(_logger);
+                            LogNoBkFoundToSync();
                         }
                     }
                 }
                 else
                 {
-                    LogSameToCloud(_logger, etagVersion);
+                    LogSameToCloud(etagVersion);
                 }
             }
         }
@@ -93,26 +121,26 @@ namespace Newbe.BookmarkManager.Services
         [LoggerMessage(Level = LogLevel.Error,
             Message = "Failed to sync log",
             EventId = 1)]
-        partial void LogErrorSync(ILogger logger, Exception ex);
+        partial void LogErrorSync(Exception ex);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "It is the same to cloud. etagVersion: {etagVersion}",
             EventId = 2)]
-        partial void LogSameToCloud(ILogger logger, long etagVersion);
+        partial void LogSameToCloud(long etagVersion);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "There is no BK need sync to cloud",
             EventId = 3)]
-        partial void LogNoBkFoundToSync(ILogger logger);
+        partial void LogNoBkFoundToSync();
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Bk collection sync to local, etagVersion: {etagVersion}, lastUpdateTime: {lastUpdateTime}",
             EventId = 4)]
-        partial void LogSyncToLocal(ILogger logger, long etagVersion, long lastUpdateTime);
+        partial void LogSyncToLocal(long etagVersion, long lastUpdateTime);
 
         [LoggerMessage(Level = LogLevel.Information,
             Message = "Bk collection sync to cloud, etagVersion: {etagVersion}, lastUpdateTime: {lastUpdateTime}",
             EventId = 5)]
-        partial void LogSyncToCloud(ILogger logger, long etagVersion, long lastUpdateTime);
+        partial void LogSyncToCloud(long etagVersion, long lastUpdateTime);
     }
 }
