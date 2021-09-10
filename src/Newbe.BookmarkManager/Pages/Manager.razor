@@ -2,101 +2,30 @@
 @using Newbe.BookmarkManager.Services
 @inherits Blazor.BrowserExtension.Pages.IndexPage
 
-<Layout Class="site-layout-background">
+<Layout Class="site-layout-background" Style="min-height: 100vh">
     <Header>
-        <Row>
-<<<<<<< HEAD
-            <Col Span="20">
-            <Title Style="color: white">
-                <Image Src="/icons/32icon.png" Height="32" Preview="false"></Image>
-                Amazing Favorites
-            </Title>
-            </Col>
-            <Col Style="text-align: right" Span="4">
-            <Space>
-                <SpaceItem>
-                    <LikeProject />
-                </SpaceItem>
-                <SpaceItem>
-                    <Button OnClick="OpenHelp">
-                        <Icon Type="question-circle" Theme="twotone" />
-                    </Button>
-                </SpaceItem>
-                <SpaceItem>
-                    <Button OnClick="OpenControlPanel">
-                        <Icon Type="setting" Theme="twotone" />
-                    </Button>
-                </SpaceItem>
-            </Space>
-=======
-            <Col Span="16">
-                <Title Style="color: white">
-                    <Image Src="/icons/32icon.png" Height="32" Preview="false"></Image>
-                    Amazing Favorites
-                </Title>
-            </Col>
-            <Col Style="text-align: right" Span="8">
+        <PageHeader BackIcon="@false" Ghost="true" Style="width: 1200px;height: 64px;margin: 0 auto">
+            <PageHeaderAvatar>
+                <Avatar Src="/icons/32icon.png"/>
+            </PageHeaderAvatar>
+            <PageHeaderTitle>
+                <Text Style="color: white">Amazing Favorites</Text>
+            </PageHeaderTitle>
+            <PageHeaderTags>
+                <Tag PresetColor="@PresetColor.Blue">@Consts.CurrentVersion</Tag>
+            </PageHeaderTags>
+            <PageHeaderSubtitle></PageHeaderSubtitle>
+            <PageHeaderExtra>
                 <ManagerButton></ManagerButton>
->>>>>>> main
-            </Col>
-        </Row>
+            </PageHeaderExtra>
+        </PageHeader>
     </Header>
-    <Content>
-        <Row Class="@((_userOptions?.BackgroundImageFeature?.Enabled == true)?"site-layout-content":"")">
+    <Content Style="width: 1200px;margin: 20px auto">
+        <Row>
             <Col Span="24">
-<<<<<<< HEAD
-            <AntList Bordered DataSource="@_targetBks">
-                <Header>
-                    <Row Gutter="(16,24)">
-                        <Col Span="24">
-                        <TipsAlert />
-                        </Col>
-                        <Col Span="24">
-                        <Spin Spinning="@_searchInputLoading">
-                            <Search Placeholder="input keyword to search"
-                                    EnterButton="true"
-                                    AutoFocus="true"
-                                    @ref="_search"
-                                    @bind-Value="@SearchValue" />
-                        </Spin>
-                        </Col>
-                        @if (_userOptions?.HotTagsFeature?.Enabled == true)
-                        {
-                            <antdesign.Col Span="10">
-                                <HotTags OnTagClick="e => OnClickTag(e.Tag.Tag)" />
-                            </antdesign.Col>
-                        }
-                    </Row>
-                </Header>
-                <ChildContent Context="bk">
-                    <ListItem @key="@bk.Bk.Url">
-                        <Col Span="24">
-                        <Space>
-                            <SpaceItem>
-                                @if (bk.ShowIndex && bk.LineIndex < 10)
-                                {
-                                    <code>alt + </code>
-                                }
-                                @bk.LineIndex
-                            </SpaceItem>
-                            <SpaceItem>
-                                <Button Shape="circle"
-                                        Icon="edit"
-                                        OnClick="e => OnClickEdit(bk.Bk.Url, bk.Bk.Title)" />
-                            </SpaceItem>
-                            <SpaceItem>
-                                <Button Type="link"
-                                        OnClick="e => OnClickUrl(bk, e)">
-                                    <Space>
-                                        <SpaceItem>
-                                            @if (!string.IsNullOrEmpty(bk.Bk.FavIconUrl))
-=======
                 <AntList Bordered DataSource="@_targetBks">
                     <Header>
                         <Row Gutter="(16,24)">
-                            <Col Span="24">
-                                <TipsAlert/>
-                            </Col>
                             <Col Span="24">
                                 <Spin Spinning="@_searchInputLoading">
                                     <AutoComplete Options="@SearchOptions">
@@ -131,11 +60,6 @@
                                         @bk.LineIndex
                                     </SpaceItem>
                                     <SpaceItem>
-                                        <Button Shape="circle"
-                                                Icon="edit"
-                                                OnClick="e => OnClickEdit(bk.Bk.Url, bk.Bk.Title)"/>
-                                    </SpaceItem>
-                                    <SpaceItem>
                                         <Button Type="link"
                                                 OnClick="e => OnClickUrl(bk, e)">
                                             <Space>
@@ -163,63 +87,50 @@
                                         @if (bk.Bk.Tags != null)
                                         {
                                             @foreach (var tag in bk.Bk.Tags)
->>>>>>> main
                                             {
-                                                <Badge Count="bk.Bk.ClickedCount"
-                                                       Size="small"
-                                                       Style="background-color: #52c41a; ">
-                                                    <ChildContent>
-                                                        <Image Width="16px"
-                                                               Height="16px"
-                                                               Preview="false"
-                                                               Src="@bk.Bk.FavIconUrl"
-                                                               Fallback="@WebHelper.DefaultImagePlaceHolder" />
-                                                    </ChildContent>
-                                                </Badge>
+                                                <Tag Closable="true"
+                                                     @key="@tag"
+                                                     OnClosing="e => OnRemovingTag(bk.Bk, tag)"
+                                                     OnClick="e => OnClickTag(tag)"
+                                                     Color="@WebHelper.GetTagColor(tag)">
+                                                    @tag
+                                                </Tag>
                                             }
-                                        </SpaceItem>
-                                        <SpaceItem>@bk.Bk.Title</SpaceItem>
-                                    </Space>
-                                </Button>
-                            </SpaceItem>
-                            <SpaceItem>
-                                @if (bk.Bk.Tags != null)
-                                {
-                                    @foreach (var tag in bk.Bk.Tags)
-                                    {
-                                        <Tag Closable="true"
-                                             @key="@tag"
-                                             OnClosing="e => OnRemovingTag(bk.Bk, tag)"
-                                             OnClick="e => OnClickTag(tag)"
-                                             Color="@WebHelper.GetTagColor(tag)">
-                                            @tag
-                                        </Tag>
-                                    }
-                                }
-                            </SpaceItem>
-                            <SpaceItem>
-                                <TagInput OnNewTagsCreated="e => OnNewTagsAddAsync(bk, e.Tags)"
-                                          Options="_allTags">
-                                </TagInput>
-                            </SpaceItem>
-                            <SpaceItem>
-                                <Button Shape="circle"
-                                        Icon="share-alt"
-                                        Size="small"
-                                        OnClick="e => OnClickSharing(bk.Bk.Url)" />
-                            </SpaceItem>
-                        </Space>
-                        </Col>
-                    </ListItem>
-                </ChildContent>
-                <Footer>
-                </Footer>
-            </AntList>
+                                        }
+                                    </SpaceItem>
+                                    <SpaceItem>
+                                        <TagInput OnNewTagsCreated="e => OnNewTagsAddAsync(bk, e.Tags)"
+                                                  Options="_allTags">
+                                        </TagInput>
+                                    </SpaceItem>
+                                    <SpaceItem>
+                                        <Button Shape="circle"
+                                                Icon="edit"
+                                                Size="small"
+                                                OnClick="e => OnClickEdit(bk.Bk.Url, bk.Bk.Title)"/>
+                                    </SpaceItem>
+                                    <SpaceItem>
+                                        <Button Shape="circle"
+                                                Icon="share-alt"
+                                                Size="small"
+                                                OnClick="e => OnClickSharing(bk.Bk.Url)"/>
+                                    </SpaceItem>
+                                </Space>
+                            </Col>
+                        </ListItem>
+                    </ChildContent>
+                    <Footer>
+
+                    </Footer>
+                </AntList>
             </Col>
         </Row>
     </Content>
-    <Footer>
-        <Space>
+    <Footer Style="text-align: center;">
+        <Space Direction="DirectionVHType.Vertical">
+            <SpaceItem>
+                <TipsAlert/>
+            </SpaceItem>
             <SpaceItem>Welcome to submit you suggestion at <a href="https://github.com/newbe36524/Amazing-Favorites/issues" target="_blank">github.com</a></SpaceItem>
             <SpaceItem>
                 <a href="@StaticUrlOptions.Value.PrivacyAgreement" target="_blank">Privacy Agreement</a>
@@ -227,30 +138,24 @@
         </Space>
     </Footer>
 </Layout>
-<<<<<<< HEAD
-<ControlPanel OnClickResumeFactorySetting="OnClickResumeFactorySetting"
-              OnUserOptionSave="OnUserOptionSave"
-              @bind-Visible="_controlPanelVisible" />
-=======
 
-
->>>>>>> main
 
 @{
     RenderFragment editFormFooter = @<Template>
-        <Button OnClick="OnClickModalRemoveAsync"
-                Type="danger">
-            Remove
-        </Button>
-        <Button OnClick="OnClickModalSaveAsync"
-                Type="primary">
-            Save
-        </Button>
-        <Button OnClick="OnClickModalCancelAsync">
-            Cancel
-        </Button>
-    </Template>;
+                                        <Button OnClick="OnClickModalRemoveAsync"
+                                                Type="danger">
+                                            Remove
+                                        </Button>
+                                        <Button OnClick="OnClickModalSaveAsync"
+                                                Type="primary">
+                                            Save
+                                        </Button>
+                                        <Button OnClick="OnClickModalCancelAsync">
+                                            Cancel
+                                        </Button>
+                                    </Template>;
 }
+
 
 <Modal Title="@("Edit Bookmark")"
        Visible="@_modalVisible"
@@ -258,25 +163,13 @@
        Footer="@editFormFooter">
     <Spin Tip="Loading..."
           Spinning="@_isFormLoading">
-        <BkEditForm BkEditFormModel="@BkEditFormData">
+        <BkEditForm
+            BkEditFormModel="@BkEditFormData">
         </BkEditForm>
     </Spin>
 </Modal>
 
 <AfCodePanel @bind-Visible="@_afCodeSharingPanelVisible"
              Url="@_afCodeSharingUrl">
-</AfCodePanel>
 
-<<<<<<< HEAD
-<style>
-    .site-layout-content {
-        background: #fff;
-        background-image:url("@_userOptions?.BackgroundImageFeature?.BaseUrl");
-        background-size: cover;
-        background-repeat: no-repeat
-    }
-</style>
-=======
 </AfCodePanel>
-<AfUserNotification></AfUserNotification>
->>>>>>> main
