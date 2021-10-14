@@ -50,6 +50,8 @@
 
     [Inject]
     public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
+    [Inject]
+    public IBingSuggestService BingSuggestService {get;set;}
 
     private ModalModel _modal = new();
     private bool _visible;
@@ -155,6 +157,8 @@
     {
         await base.OnInitializedAsync();
         await LoadUserOptions();
+
+        await BingSuggestService.TestAsync();
     }
 
 

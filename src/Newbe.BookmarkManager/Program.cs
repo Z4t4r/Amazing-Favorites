@@ -63,6 +63,8 @@ namespace Newbe.BookmarkManager
             builder.Services
                 .AddSingleton(typeof(IIndexedDbRepo<,>), typeof(IndexedDbRepo<,>));
             builder.Services
+                .AddSingleton<IBingSuggestService, BingSuggestService>();
+            builder.Services
                 .AddAntDesign()
                 .AddBrowserExtensionServices()
                 .AddTransient<IBookmarksApi>(p => p.GetRequiredService<IWebExtensionsApi>().Bookmarks)
