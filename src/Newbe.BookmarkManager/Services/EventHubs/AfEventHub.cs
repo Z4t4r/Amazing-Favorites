@@ -5,27 +5,32 @@ using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Microsoft.Extensions.Logging;
-using WebExtensions.Net.Runtime;
+using Newtonsoft.Json;
+using WebExtensions.Net.Storage;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Newbe.BookmarkManager.Services.EventHubs
 {
     public class AfEventHub : IAfEventHub
     {
         private readonly ILogger<AfEventHub> _logger;
-        private readonly IRuntimeApi _runtimeApi;
+        private readonly IStorageApi _storageApi;
         private readonly ILifetimeScope _lifetimeScope;
+        private readonly IClock _clock;
 
         private readonly Dictionary<string, (Type eventType, List<Action<ILifetimeScope, IAfEvent>> handler)>
             _handlersDict = new();
 
         public AfEventHub(
             ILogger<AfEventHub> logger,
-            IRuntimeApi runtimeApi,
-            ILifetimeScope lifetimeScope)
+            IStorageApi storageApi,
+            ILifetimeScope lifetimeScope,
+            IClock clock)
         {
             _logger = logger;
-            _runtimeApi = runtimeApi;
+            _storageApi = storageApi;
             _lifetimeScope = lifetimeScope;
+            _clock = clock;
         }
 
         private int _locker;
@@ -40,10 +45,27 @@ namespace Newbe.BookmarkManager.Services.EventHubs
 
             _logger.LogInformation("Start to run AfEventHub");
 
-            await _runtimeApi.OnMessage.AddListener(OnReceivedMessage);
+            await _storageApi.OnChanged.AddListener(OnReceivedChanged);
         }
 
-        private bool OnReceivedMessage(object o, MessageSender sender, Action arg3)
+        private const string AfEventKey = "afEvent";
+
+        private void OnReceivedChanged(object changes, string area)
+        {
+            var jsonElement = (JsonElement)changes;
+            if (jsonElement.TryGetProperty(AfEventKey, out var value))
+            {
+                if (value.TryGetProperty("newValue", out var newValue))
+                {
+                    if (newValue.TryGetProperty("message", out var message))
+                    {
+                        OnReceivedMessage(message);
+                    }
+                }
+            }
+        }
+
+        private bool OnReceivedMessage(object o)
         {
             var afEventEnvelope = JsonSerializer.Deserialize<AfEventEnvelope>(JsonSerializer.Serialize(o));
             if (afEventEnvelope == null)
@@ -66,7 +88,11 @@ namespace Newbe.BookmarkManager.Services.EventHubs
             }
 
             var (eventType, handlers) = registration;
-            var payload = JsonSerializer.Deserialize(afEventEnvelope.PayloadJson, eventType);
+            var payloadJson = afEventEnvelope.PayloadJson;
+            _logger.LogDebug("deserialize to {Type} from JSON {Json}", eventType, payloadJson);
+            var payload = JsonConvert.DeserializeObject(payloadJson, eventType);
+            // ??? its strangely, it doesn't work below
+            // var payload = JsonHelper.Deserialize(payloadJson, eventType);
             if (payload == null)
             {
                 _logger.LogError("failed to deserialize event payload: {Payload}", payload);
@@ -77,8 +103,9 @@ namespace Newbe.BookmarkManager.Services.EventHubs
             {
                 handler.Invoke(_lifetimeScope, (IAfEvent)payload);
             }
-
-
+#if DEBUG
+            afEventEnvelope = afEventEnvelope with { PayloadJson = string.Empty };
+#endif
             _logger.LogInformation("event handled success: {AfEvent}",
                 afEventEnvelope with { PayloadJson = string.Empty });
             return true;
@@ -102,7 +129,7 @@ namespace Newbe.BookmarkManager.Services.EventHubs
             _handlersDict[eventName] = registration;
         }
 
-        public Task PublishAsync(IAfEvent afEvent)
+        public async Task PublishAsync(IAfEvent afEvent)
         {
             var typeCode = afEvent.GetType().Name;
             var message = new AfEventEnvelope
@@ -111,17 +138,22 @@ namespace Newbe.BookmarkManager.Services.EventHubs
                 PayloadJson = JsonSerializer.Serialize((object)afEvent)
             };
             _logger.LogInformation("Event published {TypeCode}", typeCode);
-            // current page can not receive runtime message
-            OnReceivedMessage(message, default!, default!);
             try
             {
-                _runtimeApi.SendMessage("", message, new object());
+                var local = await _storageApi.GetLocal();
+                await local.Set(new
+                {
+                    afEvent = new
+                    {
+                        utcNow = _clock.UtcNow,
+                        message
+                    }
+                });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // ignore
             }
-            return Task.CompletedTask;
         }
     }
 }

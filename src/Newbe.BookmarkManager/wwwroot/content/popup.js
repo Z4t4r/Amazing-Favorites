@@ -50,14 +50,35 @@
             await browser.tabs.update(managerTabs[0].id, {
                 active: true
             });
-            await browser.runtime.sendMessage({
-                title: bkNode.title,
-                url: bkNode.url,
-                tabId: tab.id
+
+            await browser.storage.local.set({
+                "afEvent": {
+                    message: {
+                        typeCode: "TriggerEditBookmarkEvent",
+                        payloadJson: JSON.stringify({
+                            title: bkNode.title,
+                            url: bkNode.url,
+                            tabId: tab.id
+                        })
+                    },
+                    utcNow: Math.floor(Date.now() / 1000)
+                }
             });
         } else {
             await browser.tabs.create({
-                url: "/Manager/index.html?editTabId=" + tab.id
+                url: "/Manager/index.html"
+            });
+
+            await browser.storage.local.set({
+                "afEvent": {
+                    message: {
+                        typeCode: 'UserClickAfIconEvent',
+                        payloadJson: JSON.stringify({
+                            tabId: tab.id
+                        })
+                    },
+                    utcNow: Math.floor(Date.now() / 1000)
+                }
             });
         }
     }
