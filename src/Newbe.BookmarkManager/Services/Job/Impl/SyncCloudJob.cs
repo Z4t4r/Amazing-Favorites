@@ -92,6 +92,8 @@ namespace Newbe.BookmarkManager.Services
                     CloudBkFeature:
                     {
                         Enabled: true,
+                        AccessToken: not null,
+                        BaseUrl: not null
                     }
                 })
             {
