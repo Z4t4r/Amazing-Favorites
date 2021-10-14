@@ -1,12 +1,12 @@
 ﻿@using Newbe.BookmarkManager.Services
-<Popover Placement="@Placement.Bottom"
-         Trigger="@(Array.Empty<Trigger>())" Visible="@NotificationCenterCore.NewMessage">
+<Popover Placement="@PlacementType.Bottom"
+         Trigger="@(Array.Empty<TriggerType>())" Visible="@NotificationCenterCore.NewMessage">
     <ContentTemplate>
         👋 new message
     </ContentTemplate>
     <ChildContent>
-        <Popover Placement="@Placement.Bottom"
-                 Trigger="@(new[] { AntDesign.Trigger.Click })">
+        <Popover Placement="@PlacementType.Bottom"
+                 Trigger="@(new[] { AntDesign.TriggerType.Click })">
             <ChildContent>
                 <Badge Dot="NotificationCenterCore.RedDot">
                     <Button OnClick="ClickNotificationCenterAsync">

@@ -142,9 +142,6 @@
 
 @{
     RenderFragment editFormFooter = @<Template>
-                                        <Button OnClick="OnSharingButton">
-                                            Sharing
-                                        </Button>
                                         <Button OnClick="OnClickModalRemoveAsync"
                                                 Type="danger">
                                             Remove
@@ -176,16 +173,3 @@
              Url="@_afCodeSharingUrl">
 
 </AfCodePanel>
-
-<AfAddScript Src="content/manager_keyboard.js" Async="false" Defer="false"/>
-@if (_userOptions is
-{
-    AcceptPrivacyAgreement: true,
-    ApplicationInsightFeature:
-    {
-        Enabled: true
-        }
-    })
-{
-    <AfAddScript Src="content/ai.js" Async="false" Defer="false"/>
-}

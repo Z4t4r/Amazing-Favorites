@@ -11,21 +11,11 @@ namespace Newbe.BookmarkManager.Services
         {
             var node = await bookmarksApi.Get(id);
             var currentNode = node?.FirstOrDefault();
-            var maxLevelCount = 5;
-            var i = 0;
             while (currentNode != null)
             {
                 yield return currentNode;
-                if (++i > maxLevelCount)
-                {
-                    yield break;
-                }
-
-                if (!string.IsNullOrEmpty(currentNode.ParentId))
-                {
-                    var nodes = await bookmarksApi.Get(currentNode.ParentId);
-                    currentNode = nodes?.FirstOrDefault();
-                }
+                var nodes = await bookmarksApi.Get(currentNode.ParentId);
+                currentNode = nodes?.FirstOrDefault();
             }
         }
     }

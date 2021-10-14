@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -6,7 +7,6 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Autofac.Extras.DynamicProxy;
 using BlazorApplicationInsights;
-using Excubo.Blazor.ScriptInjection;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -38,6 +38,7 @@ namespace Newbe.BookmarkManager
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.ConfigureContainer(new AutofacServiceProviderFactory(Register));
             builder.RootComponents.Add<App>("#app");
+
             builder.Services.AddBlazorApplicationInsights(addILoggerProvider: false)
                 .AddSingleton<ApplicationInsights>()
                 .AddSingleton<EmptyApplicationInsights>()
@@ -51,8 +52,6 @@ namespace Newbe.BookmarkManager
                     return provider.GetRequiredService<EmptyApplicationInsights>();
                 })
                 .AddSingleton<ILoggerProvider, AiLoggerProvider>();
-
-            builder.Services.AddScriptInjection(onload_notification: false);
             builder.Services.AddScoped(
                     sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) })
                 .Configure<BaseUriOptions>(builder.Configuration.GetSection(nameof(BaseUriOptions)))
@@ -64,7 +63,7 @@ namespace Newbe.BookmarkManager
                 .AddSingleton(typeof(IIndexedDbRepo<,>), typeof(IndexedDbRepo<,>));
             builder.Services
                 .AddAntDesign()
-                .AddBrowserExtensionServices()
+                .AddBrowserExtensionServices(options => { options.ProjectNamespace = typeof(Program).Namespace; })
                 .AddTransient<IBookmarksApi>(p => p.GetRequiredService<IWebExtensionsApi>().Bookmarks)
                 .AddTransient<ITabsApi>(p => p.GetRequiredService<IWebExtensionsApi>().Tabs)
                 .AddTransient<IWindowsApi>(p => p.GetRequiredService<IWebExtensionsApi>().Windows)
@@ -84,12 +83,6 @@ namespace Newbe.BookmarkManager
                 .AddSingleton<INotificationRecordService, NotificationRecordService>();
 
 
-            builder.Services.AddLogging(loggingBuilder =>
-            {
-#if DEBUG
-                loggingBuilder.AddSeq(builder.Configuration.GetSection("Seq"));
-#endif
-            });
             builder.Services
                 .AddTransient<IBkEditFormData, BkEditFormData>();
 
@@ -307,7 +300,6 @@ namespace Newbe.BookmarkManager
                 IEnumerable<Type> GetJobTypes()
                 {
                     yield return typeof(DataFixJob);
-                    yield return typeof(HandleUserClickIconJob);
                     yield return typeof(ShowWelcomeJob);
                     yield return typeof(ShowWhatNewJob);
                     yield return typeof(InviteAcceptPrivacyAgreementJob);
