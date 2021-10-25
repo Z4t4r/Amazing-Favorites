@@ -10,10 +10,10 @@ namespace Newbe.BookmarkManager.Components
 {
     public partial class ManagerButton
     {
-        [Inject] public ITabsApi Tabs { get; set; }
-        [Inject] public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
-        [Inject] public IBkManager BkManager { get; set; }
-        [Inject] public IAfEventHub AfEventHub { get; set; }
+        [Inject] public ITabsApi? Tabs { get; set; }
+        [Inject] public IOptions<StaticUrlOptions>? StaticUrlOptions { get; set; }
+        [Inject] public IBkManager? BkManager { get; set; }
+        [Inject] public IAfEventHub? AfEventHub { get; set; }
         private bool _controlPanelVisible;
 
         protected override async Task OnAfterRenderAsync(bool firstRender)

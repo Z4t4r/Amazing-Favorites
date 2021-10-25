@@ -6,7 +6,7 @@ namespace Newbe.BookmarkManager.Services
     public record AfMetadata : IEntity<string>
     {
         public string Id { get; set; } = Consts.SingleOneDataId;
-        public string WhatsNewVersion { get; set; }
+        public string? WhatsNewVersion { get; set; }
         public bool WelcomeShown { get; set; }
     }
 }

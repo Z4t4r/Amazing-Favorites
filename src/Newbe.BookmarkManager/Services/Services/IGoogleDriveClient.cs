@@ -16,9 +16,9 @@ namespace Newbe.BookmarkManager.Services
     public record GoogleDriveOAuthOptions
     {
         public OAuth2ClientType Type { get; set; }
-        public string ClientId { get; set; }
-        public string DevClientId { get; set; }
-        public string[] Scopes { get; set; }
+        public string? ClientId { get; set; }
+        public string? DevClientId { get; set; }
+        public string[]? Scopes { get; set; }
     }
 
     public enum OAuth2ClientType

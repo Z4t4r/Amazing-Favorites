@@ -13,9 +13,9 @@ namespace Newbe.BookmarkManager.Components
     /// </summary>
     public class AfAddScript : ComponentBase
     {
-        private string src;
+        private string? src;
 
-        [Inject] private IScriptInjectionTracker ScriptInjectionTracker { get; set; }
+        [Inject] private IScriptInjectionTracker? ScriptInjectionTracker { get; set; }
 
         [Parameter]
         public string Src
@@ -57,7 +57,7 @@ namespace Newbe.BookmarkManager.Components
             builder.CloseElement();
         }
 
-        [Inject] private IJSRuntime js { get; set; }
+        [Inject] private IJSRuntime? js { get; set; }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {

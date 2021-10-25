@@ -97,12 +97,12 @@ namespace Newbe.BookmarkManager.Tests
 
         record TestRequest : IRequest, IMessage
         {
-            public string Name { get; set; }
+            public string? Name { get; set; }
         }
 
         record TestResponse : IResponse, IMessage
         {
-            public string Greetings { get; set; }
+            public string? Greetings { get; set; }
         }
     }
 }

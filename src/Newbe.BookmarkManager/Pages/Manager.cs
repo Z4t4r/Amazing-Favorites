@@ -24,23 +24,23 @@ namespace Newbe.BookmarkManager.Pages
     public partial class Manager : IAsyncDisposable
     {
         //[Inject] public IBkSearcher BkSearcher { get; set; }
-        [Inject] public ILPCClient<IBkSearcherServer> Client { get; set; }
-        [Inject] public IBkManager BkManager { get; set; }
-        [Inject] public ITagsManager TagsManager { get; set; }
-        [Inject] public IJSRuntime JsRuntime { get; set; }
-        [Inject] public IUserOptionsService UserOptionsService { get; set; }
-        [Inject] public IBkEditFormData BkEditFormData { get; set; }
-        [Inject] public IAfCodeService AfCodeService { get; set; }
-        [Inject] public IManagePageNotificationService ManagePageNotificationService { get; set; }
-        [Inject] public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
-        [Inject] public IOptions<DevOptions> DevOptions { get; set; }
-        [Inject] public IRecordService RecordService { get; set; }
-        [Inject] public IRecentSearchHolder RecentSearchHolder { get; set; }
-        [Inject] public IAfEventHub AfEventHub { get; set; }
-        [Inject] public NavigationManager Navigation { get; set; }
-        [Inject] public ISimpleDataStorage SimpleDataStorage { get; set; }
-        [Inject] public IClock Clock { get; set; }
-        private UserOptions _userOptions;
+        [Inject] public ILPCClient<IBkSearcherServer>? Client { get; set; }
+        [Inject] public IBkManager? BkManager { get; set; }
+        [Inject] public ITagsManager? TagsManager { get; set; }
+        [Inject] public IJSRuntime? JsRuntime { get; set; }
+        [Inject] public IUserOptionsService? UserOptionsService { get; set; }
+        [Inject] public IBkEditFormData? BkEditFormData { get; set; }
+        [Inject] public IAfCodeService? AfCodeService { get; set; }
+        [Inject] public IManagePageNotificationService? ManagePageNotificationService { get; set; }
+        [Inject] public IOptions<StaticUrlOptions>? StaticUrlOptions { get; set; }
+        [Inject] public IOptions<DevOptions>? DevOptions { get; set; }
+        [Inject] public IRecordService? RecordService { get; set; }
+        [Inject] public IRecentSearchHolder? RecentSearchHolder { get; set; }
+        [Inject] public IAfEventHub? AfEventHub { get; set; }
+        [Inject] public NavigationManager? Navigation { get; set; }
+        [Inject] public ISimpleDataStorage? SimpleDataStorage { get; set; }
+        [Inject] public IClock? Clock { get; set; }
+        private UserOptions? _userOptions;
 
         private BkViewItem[] _targetBks = Array.Empty<BkViewItem>();
 
@@ -61,7 +61,7 @@ namespace Newbe.BookmarkManager.Pages
         private readonly Subject<OnSearchResultClickArgs> _userUrlClickSubject = new();
         private readonly List<IDisposable> _subjectHandlers = new();
         private readonly int _resultLimit = 10;
-        private AutoCompleteSearch _search;
+        private AutoCompleteSearch? _search;
 
         private IEnumerable<string> SearchOptions
         {
@@ -78,8 +78,8 @@ namespace Newbe.BookmarkManager.Pages
 
         public record OnSearchResultClickArgs
         {
-            public string SearchText { get; set; }
-            public BkViewItem ClickItem { get; set; }
+            public string? SearchText { get; set; }
+            public BkViewItem? ClickItem { get; set; }
         }
 
         private void OnReceivedCommand(string command)

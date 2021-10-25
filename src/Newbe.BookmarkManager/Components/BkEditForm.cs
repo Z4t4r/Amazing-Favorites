@@ -7,7 +7,7 @@ namespace Newbe.BookmarkManager.Components
 {
     public partial class BkEditForm
     {
-        [Parameter] public IBkEditFormData BkEditFormModel { get; set; }
+        [Parameter] public IBkEditFormData? BkEditFormModel { get; set; }
 
         private void OnRemovingTag(string tag)
         {

@@ -9,7 +9,7 @@ namespace Newbe.BookmarkManager.Services.SimpleData
 
     public record RecentSearchItem
     {
-        public string Text { get; set; }
+        public string? Text { get; set; }
         public long LastTime { get; set; }
         public int SearchCount { get; set; }
     }
