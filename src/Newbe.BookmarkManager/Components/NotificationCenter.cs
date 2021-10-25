@@ -10,7 +10,7 @@ namespace Newbe.BookmarkManager.Components
 {
     public partial class NotificationCenter
     {
-        [Inject] public INotificationCenterCore? NotificationCenterCore { get; set; }
+        [Inject] public INotificationCenterCore NotificationCenterCore { get; set; }
 
         protected override Task OnInitializedAsync()
         {

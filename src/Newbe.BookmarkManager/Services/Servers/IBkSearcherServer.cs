@@ -14,7 +14,7 @@ namespace Newbe.BookmarkManager.Services.Servers
 
     public record BkSearchRequest : IRequest
     {
-        public string? SearchText { get; set; }
+        public string SearchText { get; set; }
         public int Limit { get; set; }
     }
     public record BkSearchHistoryRequest : IRequest
@@ -23,7 +23,7 @@ namespace Newbe.BookmarkManager.Services.Servers
     }
     public record BkSearchResponse : IResponse
     {
-        public SearchResultItem[]? ResultItems { get; set; }
+        public SearchResultItem[] ResultItems { get; set; }
     }
 
 }

@@ -29,8 +29,8 @@ namespace Newbe.BookmarkManager.Services
             return searchInput;
         }
 
-        public string? SourceText { get; set; }
-        public string[]? Keywords { get; set; }
-        public string[]? Tags { get; set; }
+        public string SourceText { get; set; }
+        public string[] Keywords { get; set; }
+        public string[] Tags { get; set; }
     }
 }

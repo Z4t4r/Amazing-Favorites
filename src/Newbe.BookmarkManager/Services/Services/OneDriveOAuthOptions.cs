@@ -23,6 +23,6 @@
         /// </summary>
         public bool NavigateToLoginRequestUrl { get; set; }
 
-        public string[]? DefaultScopes { get; set; }
+        public string[] DefaultScopes { get; set; }
     }
 }

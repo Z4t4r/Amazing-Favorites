@@ -6,6 +6,6 @@ namespace Newbe.BookmarkManager.Services
     public record SearchRecord : IEntity<long>
     {
         public long Id { get; set; }
-        public string? RecordJson { get; set; }
+        public string RecordJson { get; set; }
     }
 }
