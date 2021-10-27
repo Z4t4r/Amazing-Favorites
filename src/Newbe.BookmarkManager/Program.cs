@@ -66,6 +66,13 @@ namespace Newbe.BookmarkManager
                 .Configure<StaticUrlOptions>(builder.Configuration.GetSection(nameof(StaticUrlOptions)));
             builder.Services
                 .AddSingleton(typeof(IIndexedDbRepo<,>), typeof(IndexedDbRepo<,>));
+            
+            builder.Services
+                .AddSingleton(typeof(IIndexedDbRepoServer<,>), typeof(IndexedDbRepoServer<,>));
+            builder.Services
+                .AddSingleton(typeof(IIndexedDbRepoClient<,>), typeof(IndexedDbRepoClient<,>));
+            
+            
             builder.Services
                 .AddAntDesign()
                 .AddBrowserExtensionServices()

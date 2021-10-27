@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.Servers;
 using Newbe.BookmarkManager.WebApi;
 
 namespace Newbe.BookmarkManager.Services
@@ -12,25 +13,39 @@ namespace Newbe.BookmarkManager.Services
         private readonly ILogger<IndexedBkManager> _logger;
         private readonly IClock _clock;
         private readonly IUrlHashService _urlHashService;
-        private readonly IIndexedDbRepo<Bk, string> _bkRepo;
-        private readonly IIndexedDbRepo<BkMetadata, string> _bkMetadataRepo;
-        private readonly IIndexedDbRepo<BkTag, string> _tagsRepo;
+        private readonly IIndexedDbRepoClient<Bk, string> _bkRepo;
+        private readonly IIndexedDbRepoClient<BkMetadata, string> _bkMetadataRepo;
+        private readonly IIndexedDbRepoClient<BkTag, string> _tagsRepo;
 
+        // private readonly IIndexedDbRepoClient<Bk, string> _bkRepoClient;
+        // private readonly IIndexedDbRepoClient<BkMetadata, string> _bkMetadataRepoClient;
+        // private readonly IIndexedDbRepoClient<BkTag, string> _tagsRepoClient;
         public IndexedBkManager(
             ILogger<IndexedBkManager> logger,
             IClock clock,
             IUrlHashService urlHashService,
-            IIndexedDbRepo<Bk, string> bkRepo,
-            IIndexedDbRepo<BkMetadata, string> bkMetadataRepo,
-            IIndexedDbRepo<BkTag, string> tagsRepo)
+            // IIndexedDbRepo<Bk, string> bkRepo,
+            // IIndexedDbRepo<BkMetadata, string> bkMetadataRepo,
+            // IIndexedDbRepo<BkTag, string> tagsRepo,
+            IIndexedDbRepoClient<Bk, string> bkRepoClient,
+            IIndexedDbRepoClient<BkMetadata, string> bkMetadataRepoClient, 
+            IIndexedDbRepoClient<BkTag, string> tagsRepoClient)
         {
             _logger = logger;
             _clock = clock;
             _urlHashService = urlHashService;
-            _bkRepo = bkRepo;
-            _bkMetadataRepo = bkMetadataRepo;
-            _bkRepo = bkRepo;
-            _tagsRepo = tagsRepo;
+            // _bkRepo = bkRepo;
+            // _bkMetadataRepo = bkMetadataRepo;
+            // _bkRepo = bkRepo;
+            // _tagsRepo = tagsRepo;
+            // _bkRepoClient = bkRepoClient;
+            // _bkMetadataRepoClient = bkMetadataRepoClient;
+            // _tagsRepoClient = tagsRepoClient;
+            
+            
+            _bkRepo = bkRepoClient;
+            _bkMetadataRepo = bkMetadataRepoClient;
+            _tagsRepo = tagsRepoClient;
         }
 
         public async Task AddClickAsync(string url, int moreCount)
@@ -323,13 +338,13 @@ namespace Newbe.BookmarkManager.Services
 
         private async Task<BkMetadata> GetMetadataAsync()
         {
-            var meta = await _bkMetadataRepo.GetSingleOneAsync() ?? new BkMetadata();
+            var meta = (await _bkMetadataRepo.GetAllAsync()).FirstOrDefault() ?? new BkMetadata();
             return meta;
         }
 
         private async Task UpdateMetadataAsync()
         {
-            var meta = await _bkMetadataRepo.GetSingleOneAsync() ?? new BkMetadata();
+            var meta = (await _bkMetadataRepo.GetAllAsync()).FirstOrDefault() ?? new BkMetadata();
             meta.EtagVersion += 1;
             meta.LastUpdateTime = _clock.UtcNow;
             await _bkMetadataRepo.UpsertAsync(meta);

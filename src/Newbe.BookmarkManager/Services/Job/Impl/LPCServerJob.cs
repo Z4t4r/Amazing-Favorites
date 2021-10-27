@@ -12,17 +12,27 @@ namespace Newbe.BookmarkManager.Services
         private readonly ILPCServer _lpcServer;
         private readonly IBkSearcherServer _bkSearcherServer;
         private readonly IBkSearcher _bkSearcher;
-        public LPCServerJob(ILPCServer lpcServer, IBkSearcherServer bkSearcherServer, IBkSearcher bkSearcher)
+
+        private readonly IIndexedDbRepoServer<Bk, string> _bkRepoServer;
+        private readonly IIndexedDbRepoServer<BkMetadata, string> _bkMetadataRepoServer;
+        private readonly IIndexedDbRepoServer<BkTag, string> _tagsRepoServer;
+        public LPCServerJob(ILPCServer lpcServer,
+            IIndexedDbRepoServer<Bk, string> bkRepoServer,
+            IIndexedDbRepoServer<BkMetadata, string> bkMetadataRepoServer,
+            IIndexedDbRepoServer<BkTag, string> tagsRepoServer)
         {
             _lpcServer = lpcServer;
-            _bkSearcherServer = bkSearcherServer;
-            _bkSearcher = bkSearcher;
+            _bkRepoServer = bkRepoServer;
+            _bkMetadataRepoServer = bkMetadataRepoServer;
+            _tagsRepoServer = tagsRepoServer;
         }
 
         public async ValueTask StartAsync()
         {
-            //_lpcServer.AddServerInstance(_bkSearcherServer);
-            _lpcServer.AddHandler<BkSearchRequest, BkSearchResponse>(Search);
+            _lpcServer.AddServerInstance(_bkRepoServer);
+            _lpcServer.AddServerInstance(_bkMetadataRepoServer);
+            _lpcServer.AddServerInstance(_tagsRepoServer);
+            //_lpcServer.AddHandler<BkSearchRequest, BkSearchResponse>(Search);
             await _lpcServer.StartAsync();
         }
 
