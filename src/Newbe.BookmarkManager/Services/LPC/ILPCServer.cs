@@ -9,6 +9,12 @@ namespace Newbe.BookmarkManager.Services.LPC
         ILPCServer AddHandler<TRequest, TResponse>(Func<TRequest, TResponse> handler)
             where TRequest : IRequest
             where TResponse : IResponse;
+        
+        ILPCServer AddHandlerAsync<TRequest, TResponse>(Func<TRequest, Task<TResponse>> handler)
+            where TRequest : IRequest
+            where TResponse : IResponse;
+        
+        
         ILPCServer AddHandler<TRequest, TResponse>(Func<TRequest, Task<TResponse>> handler)
             where TRequest : IRequest
             where TResponse : IResponse;

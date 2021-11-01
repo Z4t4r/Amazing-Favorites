@@ -67,11 +67,15 @@ namespace Newbe.BookmarkManager
             builder.Services
                 .AddSingleton(typeof(IIndexedDbRepo<,>), typeof(IndexedDbRepo<,>));
             
-            builder.Services
-                .AddSingleton(typeof(IIndexedDbRepoServer<,>), typeof(IndexedDbRepoServer<,>));
-            builder.Services
-                .AddSingleton(typeof(IIndexedDbRepoClient<,>), typeof(IndexedDbRepoClient<,>));
+            // builder.Services
+            //     .AddSingleton(typeof(IIndexedDbRepoServer<,>), typeof(IndexedDbRepoServer<,>));
+            // builder.Services
+            //     .AddSingleton(typeof(IIndexedDbRepoClient<,>), typeof(IndexedDbRepoClient<,>));
             
+            builder.Services
+                .AddSingleton(typeof(IBkManagerClient), typeof(BkManagerClient));
+            builder.Services
+                .AddSingleton(typeof(IBkManagerServer), typeof(BkManagerServer));
             
             builder.Services
                 .AddAntDesign()

@@ -13,39 +13,26 @@ namespace Newbe.BookmarkManager.Services
         private readonly ILogger<IndexedBkManager> _logger;
         private readonly IClock _clock;
         private readonly IUrlHashService _urlHashService;
-        private readonly IIndexedDbRepoClient<Bk, string> _bkRepo;
-        private readonly IIndexedDbRepoClient<BkMetadata, string> _bkMetadataRepo;
-        private readonly IIndexedDbRepoClient<BkTag, string> _tagsRepo;
-
-        // private readonly IIndexedDbRepoClient<Bk, string> _bkRepoClient;
-        // private readonly IIndexedDbRepoClient<BkMetadata, string> _bkMetadataRepoClient;
-        // private readonly IIndexedDbRepoClient<BkTag, string> _tagsRepoClient;
+        private readonly IIndexedDbRepo<Bk, string> _bkRepo;
+        private readonly IIndexedDbRepo<BkMetadata, string> _bkMetadataRepo;
+        private readonly IIndexedDbRepo<BkTag, string> _tagsRepo;
+        
         public IndexedBkManager(
             ILogger<IndexedBkManager> logger,
             IClock clock,
             IUrlHashService urlHashService,
-            // IIndexedDbRepo<Bk, string> bkRepo,
-            // IIndexedDbRepo<BkMetadata, string> bkMetadataRepo,
-            // IIndexedDbRepo<BkTag, string> tagsRepo,
-            IIndexedDbRepoClient<Bk, string> bkRepoClient,
-            IIndexedDbRepoClient<BkMetadata, string> bkMetadataRepoClient, 
-            IIndexedDbRepoClient<BkTag, string> tagsRepoClient)
+            IIndexedDbRepo<Bk, string> bkRepo,
+            IIndexedDbRepo<BkMetadata, string> bkMetadataRepo,
+            IIndexedDbRepo<BkTag, string> tagsRepo)
         {
             _logger = logger;
             _clock = clock;
             _urlHashService = urlHashService;
-            // _bkRepo = bkRepo;
-            // _bkMetadataRepo = bkMetadataRepo;
-            // _bkRepo = bkRepo;
-            // _tagsRepo = tagsRepo;
-            // _bkRepoClient = bkRepoClient;
-            // _bkMetadataRepoClient = bkMetadataRepoClient;
-            // _tagsRepoClient = tagsRepoClient;
-            
-            
-            _bkRepo = bkRepoClient;
-            _bkMetadataRepo = bkMetadataRepoClient;
-            _tagsRepo = tagsRepoClient;
+            _bkMetadataRepo = bkMetadataRepo;
+            _tagsRepo = tagsRepo;
+            _bkRepo = bkRepo;
+
+
         }
 
         public async Task AddClickAsync(string url, int moreCount)

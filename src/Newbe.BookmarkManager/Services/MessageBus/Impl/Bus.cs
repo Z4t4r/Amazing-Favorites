@@ -13,7 +13,7 @@ namespace Newbe.BookmarkManager.Services.MessageBus
     {
         public delegate Bus Factory(BusOptions options);
 
-        internal static readonly long DefaultExpiredDuration = (long)TimeSpan.FromSeconds(5).TotalSeconds;
+        internal static readonly long DefaultExpiredDuration = (long)TimeSpan.FromSeconds(10).TotalSeconds;
         internal readonly MessageHandlerCollection MessageHandlerCollection;
         private readonly BusOptions _busOptions;
         private readonly ILogger<Bus> _logger;

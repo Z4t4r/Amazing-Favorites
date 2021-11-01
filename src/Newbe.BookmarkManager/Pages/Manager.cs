@@ -25,7 +25,9 @@ namespace Newbe.BookmarkManager.Pages
     {
         //[Inject] public IBkSearcher BkSearcher { get; set; }
         [Inject] public ILPCClient<IBkSearcherServer> Client { get; set; }
-        [Inject] public IBkManager BkManager { get; set; }
+        //[Inject] public IBkManager BkManager { get; set; }
+        
+        [Inject] public IBkManagerClient BkManager { get; set; }
         [Inject] public ITagsManager TagsManager { get; set; }
         [Inject] public IJSRuntime JsRuntime { get; set; }
         [Inject] public IUserOptionsService UserOptionsService { get; set; }

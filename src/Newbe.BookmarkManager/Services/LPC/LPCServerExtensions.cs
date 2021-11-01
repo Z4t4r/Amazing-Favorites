@@ -53,7 +53,7 @@ namespace Newbe.BookmarkManager.Services.LPC
             Type requestType,
             Type responseType)
         {
-            var addHandlerCoreMethod = typeof(LPCServerExtensions).GetMethod(nameof(AddHandlerCore2),
+            var addHandlerCoreMethod = typeof(LPCServerExtensions).GetMethod(nameof(AddHandlerCore3),
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)!;
             var makeGenericMethod = addHandlerCoreMethod.MakeGenericMethod(requestType, responseType);
             makeGenericMethod.Invoke(null, new[] { server, instance, method });
@@ -69,6 +69,20 @@ namespace Newbe.BookmarkManager.Services.LPC
             {
                 var task = (dynamic)method.Invoke(instance, new object?[] { req })!;
                 var result = task.Result;
+                return (TResponse)result;
+            });
+        }
+        
+        internal static void AddHandlerCore3<TRequest, TResponse>(ILPCServer server,
+            object instance,
+            MethodInfo method)
+            where TRequest : IRequest
+            where TResponse : IResponse
+        {
+            server.AddHandlerAsync<TRequest, TResponse>( async (request) =>
+            {
+                var result =
+                    await ((Task<TResponse>) method.Invoke(instance, new object?[] {request})).ConfigureAwait(false);
                 return (TResponse)result;
             });
         }

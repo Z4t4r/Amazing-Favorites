@@ -36,6 +36,19 @@ namespace Newbe.BookmarkManager.Services.LPC
             });
             return this;
         }
+
+        public ILPCServer AddHandlerAsync<TRequest, TResponse>(Func<TRequest, Task<TResponse>> handler) where TRequest : IRequest where TResponse : IResponse
+        {
+            _bus.RegisterHandler<TRequest>((scope, message, sourceMessage) =>
+            {
+                var response = handler.Invoke(message);
+#pragma warning disable 4014
+                _bus.SendResponse(response, sourceMessage);
+#pragma warning restore 4014
+            });
+            return this;
+        }
+
         public ILPCServer AddHandler<TRequest, TResponse>(Func<TRequest, Task<TResponse>> handler)
             where TRequest : IRequest
             where TResponse : IResponse
