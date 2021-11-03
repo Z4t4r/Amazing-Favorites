@@ -111,7 +111,8 @@ namespace Newbe.BookmarkManager.Services.MessageBus
             var resultTask = await Task.WhenAny(delay, tcs.Task);
             if (resultTask == delay)
             {
-                tcs.TrySetException(new TimeoutException());
+                var message = "Reqeuest:" + request.ToString() + "MessageId:" + channelMessage.MessageId;
+                tcs.TrySetException(new TimeoutException(message));
             }
 
             return tcs.Task.Result;

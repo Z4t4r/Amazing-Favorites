@@ -40,8 +40,6 @@ namespace Newbe.BookmarkManager.Services.LPC
 
         public ILPCServer AddHandlerAsync<TRequest, TResponse>(Func<TRequest, Task<TResponse>> handler) where TRequest : IRequest where TResponse : IResponse
         {
-            
-            _logger.LogInformation($"Bus_AddHandlerAsync_");
             _bus.RegisterHandler<TRequest>((scope, message, sourceMessage) =>
             {
                 var response = handler.Invoke(message);

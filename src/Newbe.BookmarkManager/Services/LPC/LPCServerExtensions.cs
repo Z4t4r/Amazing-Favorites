@@ -67,7 +67,7 @@ namespace Newbe.BookmarkManager.Services.LPC
         {
             server.AddHandler<TRequest, TResponse>(req =>
             {
-                var task = (dynamic)method.Invoke(instance, new object?[] { req })!;
+                var task =  (dynamic)method.Invoke(instance, new object?[] { req })!;
                 var result = task.Result;
                 return (TResponse)result;
             });
@@ -82,7 +82,7 @@ namespace Newbe.BookmarkManager.Services.LPC
             server.AddHandlerAsync<TRequest, TResponse>(async(request) =>
             {
                 var result =
-                     await ((Task<TResponse>) method.Invoke(instance, new object?[] {request})).ConfigureAwait(false);
+                     await ((Task<TResponse>) method.Invoke(instance, new object?[] {request}));
                 return (TResponse)result;
             });
         }
