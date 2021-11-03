@@ -10,7 +10,7 @@ namespace Newbe.BookmarkManager.Services
     public class SyncTagRelatedBkCountJob : ISyncTagRelatedBkCountJob
     {
         private readonly ILogger<SyncTagRelatedBkCountJob> _logger;
-        private readonly IBkManagerClient _bkManager;
+        private readonly IBkManager _bkManager;
         private readonly ITagsManager _tagsManager;
 
         // ReSharper disable once NotAccessedField.Local
@@ -18,7 +18,7 @@ namespace Newbe.BookmarkManager.Services
 
         public SyncTagRelatedBkCountJob(
             ILogger<SyncTagRelatedBkCountJob> logger,
-            IBkManagerClient bkManager,
+            IBkManager bkManager,
             ITagsManager tagsManager)
         {
             _logger = logger;

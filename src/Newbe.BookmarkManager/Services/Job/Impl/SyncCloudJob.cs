@@ -13,7 +13,7 @@ namespace Newbe.BookmarkManager.Services
     public partial class SyncCloudJob : ISyncCloudJob
     {
         private readonly ILogger _logger;
-        private readonly IBkManagerClient _bkManager;
+        private readonly IBkManager _bkManager;
         private readonly IUserOptionsService _userOptionsService;
         private readonly ICloudServiceFactory _cloudServiceFactory;
         private readonly IAfEventHub _afEventHub;
@@ -29,7 +29,7 @@ namespace Newbe.BookmarkManager.Services
 
         public SyncCloudJob(
             ILogger<SyncCloudJob> logger,
-            IBkManagerClient bkManager,
+            IBkManager bkManager,
             IUserOptionsService userOptionsService,
             ICloudServiceFactory cloudServiceFactory,
             IAfEventHub afEventHub,

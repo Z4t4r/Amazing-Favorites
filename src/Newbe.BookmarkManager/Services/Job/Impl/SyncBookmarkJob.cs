@@ -11,12 +11,12 @@ namespace Newbe.BookmarkManager.Services
     public class SyncBookmarkJob : ISyncBookmarkJob
     {
         private readonly ILogger<SyncBookmarkJob> _logger;
-        private readonly IBkManagerClient _bkManager;
+        private readonly IBkManager _bkManager;
         private readonly IBookmarksApi _bookmarksApi;
 
         public SyncBookmarkJob(
             ILogger<SyncBookmarkJob> logger,
-            IBkManagerClient bkManager,
+            IBkManager bkManager,
             IBookmarksApi bookmarksApi)
         {
             _logger = logger;
