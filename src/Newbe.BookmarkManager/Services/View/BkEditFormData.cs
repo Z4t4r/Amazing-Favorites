@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.Servers;
 using WebExtensions.Net.Bookmarks;
 
 namespace Newbe.BookmarkManager.Services
@@ -15,13 +16,13 @@ namespace Newbe.BookmarkManager.Services
         private string _oldTitle;
 
         private readonly ILogger<BkEditFormData> _logger;
-        private readonly IBkManager _bkManager;
+        private readonly IBkManagerClient _bkManager;
         private readonly ITagsManager _tagsManager;
         private readonly IBookmarksApi _bookmarksApi;
 
         public BkEditFormData(
             ILogger<BkEditFormData> logger,
-            IBkManager bkManager,
+            IBkManagerClient bkManager,
             ITagsManager tagsManager,
             IBookmarksApi bookmarksApi)
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.Servers;
 using WebExtensions.Net.Bookmarks;
 
 namespace Newbe.BookmarkManager.Services
@@ -10,12 +11,12 @@ namespace Newbe.BookmarkManager.Services
     public class SyncBookmarkJob : ISyncBookmarkJob
     {
         private readonly ILogger<SyncBookmarkJob> _logger;
-        private readonly IBkManager _bkManager;
+        private readonly IBkManagerClient _bkManager;
         private readonly IBookmarksApi _bookmarksApi;
 
         public SyncBookmarkJob(
             ILogger<SyncBookmarkJob> logger,
-            IBkManager bkManager,
+            IBkManagerClient bkManager,
             IBookmarksApi bookmarksApi)
         {
             _logger = logger;

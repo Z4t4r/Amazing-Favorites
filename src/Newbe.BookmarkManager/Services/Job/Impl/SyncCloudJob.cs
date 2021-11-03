@@ -5,6 +5,7 @@ using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newbe.BookmarkManager.Services.EventHubs;
+using Newbe.BookmarkManager.Services.Servers;
 using Newbe.BookmarkManager.Services.SimpleData;
 
 namespace Newbe.BookmarkManager.Services
@@ -12,7 +13,7 @@ namespace Newbe.BookmarkManager.Services
     public partial class SyncCloudJob : ISyncCloudJob
     {
         private readonly ILogger _logger;
-        private readonly IBkManager _bkManager;
+        private readonly IBkManagerClient _bkManager;
         private readonly IUserOptionsService _userOptionsService;
         private readonly ICloudServiceFactory _cloudServiceFactory;
         private readonly IAfEventHub _afEventHub;
@@ -28,7 +29,7 @@ namespace Newbe.BookmarkManager.Services
 
         public SyncCloudJob(
             ILogger<SyncCloudJob> logger,
-            IBkManager bkManager,
+            IBkManagerClient bkManager,
             IUserOptionsService userOptionsService,
             ICloudServiceFactory cloudServiceFactory,
             IAfEventHub afEventHub,

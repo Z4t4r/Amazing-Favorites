@@ -3,13 +3,14 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.Servers;
 
 namespace Newbe.BookmarkManager.Services
 {
     public class SyncTagRelatedBkCountJob : ISyncTagRelatedBkCountJob
     {
         private readonly ILogger<SyncTagRelatedBkCountJob> _logger;
-        private readonly IBkManager _bkManager;
+        private readonly IBkManagerClient _bkManager;
         private readonly ITagsManager _tagsManager;
 
         // ReSharper disable once NotAccessedField.Local
@@ -17,7 +18,7 @@ namespace Newbe.BookmarkManager.Services
 
         public SyncTagRelatedBkCountJob(
             ILogger<SyncTagRelatedBkCountJob> logger,
-            IBkManager bkManager,
+            IBkManagerClient bkManager,
             ITagsManager tagsManager)
         {
             _logger = logger;
