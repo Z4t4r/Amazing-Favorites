@@ -67,15 +67,12 @@ namespace Newbe.BookmarkManager
             builder.Services
                 .AddSingleton(typeof(IIndexedDbRepo<,>), typeof(IndexedDbRepo<,>));
             
-            // builder.Services
-            //     .AddSingleton(typeof(IIndexedDbRepoServer<,>), typeof(IndexedDbRepoServer<,>));
-            // builder.Services
-            //     .AddSingleton(typeof(IIndexedDbRepoClient<,>), typeof(IndexedDbRepoClient<,>));
-            
-            builder.Services
-                .AddSingleton(typeof(IBkManagerClient), typeof(BkManagerClient));
-            builder.Services
-                .AddSingleton(typeof(IBkManagerServer), typeof(BkManagerServer));
+             builder.Services
+                 .AddSingleton(typeof(IBkManagerClient), typeof(BkManagerClient));
+             builder.Services
+                 .AddSingleton(typeof(IBkManagerServer), typeof(BkManagerServer));
+             builder.Services
+                 .AddSingleton(typeof(IBkSearcherServer), typeof(BkSearcherServer));
             
             builder.Services
                 .AddAntDesign()
@@ -97,8 +94,6 @@ namespace Newbe.BookmarkManager
                 .AddSingleton<IRecordService, RecordService>()
                 .AddSingleton<ITextAliasProvider, PinyinTextAliasProvider>()
                 .AddSingleton<INotificationRecordService, NotificationRecordService>();
-            builder.Services
-                .AddSingleton<IBkSearcherServer, BkSearcherServer>();
 
 
             builder.Services.AddLogging(loggingBuilder =>
@@ -296,6 +291,11 @@ namespace Newbe.BookmarkManager
                 builder.RegisterGeneric(typeof(LPCClient<>))
                     .As(typeof(ILPCClient<>))
                     .SingleInstance();
+                // builder.RegisterGeneric(typeof(MyLPCClient<>))
+                //     .As(typeof(IMyLPCClient<>))
+                //     .SingleInstance();
+                
+                
                 builder.RegisterType<Bus>()
                     .AsSelf();
                 builder.RegisterType<BusFactory>()

@@ -79,10 +79,10 @@ namespace Newbe.BookmarkManager.Services.LPC
             where TRequest : IRequest
             where TResponse : IResponse
         {
-            server.AddHandlerAsync<TRequest, TResponse>( async (request) =>
+            server.AddHandlerAsync<TRequest, TResponse>(async(request) =>
             {
                 var result =
-                    await ((Task<TResponse>) method.Invoke(instance, new object?[] {request})).ConfigureAwait(false);
+                     await ((Task<TResponse>) method.Invoke(instance, new object?[] {request})).ConfigureAwait(false);
                 return (TResponse)result;
             });
         }

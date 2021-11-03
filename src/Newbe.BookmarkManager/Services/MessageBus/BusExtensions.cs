@@ -116,5 +116,46 @@ namespace Newbe.BookmarkManager.Services.MessageBus
 
             return tcs.Task.Result;
         }
+        
+        
+        public static async Task<object> SendRequest2<TInterface>(this IBus dispatcher,
+            LPCRequest request)
+            where TInterface : class
+        {
+            var requestTypeName = request.MethodName;
+
+
+
+            var (channelMessage,method) = dispatcher.GetBusMessage<TInterface>(requestTypeName, request);
+            var responseType = method.ReturnType;
+            
+            var tcs = new TaskCompletionSource<object>();
+            dispatcher.RegisterHandler(responseType.Name, (scope, responseMessage) =>
+            {
+                if (responseMessage.ParentMessageId == channelMessage.MessageId)
+                {
+                    var payloadJson = responseMessage.PayloadJson;
+                    if (string.IsNullOrEmpty(payloadJson))
+                    {
+                        return false;
+                    }
+
+                    var result = JsonSerializer.Deserialize(payloadJson, responseType)!;
+                    tcs.TrySetResult(result);
+                    return true;
+                }
+
+                return false;
+            }, channelMessage.MessageId);
+            await dispatcher.SendMessage(channelMessage);
+            var delay = Task.Delay(TimeSpan.FromSeconds(Bus.DefaultExpiredDuration));
+            var resultTask = await Task.WhenAny(delay, tcs.Task);
+            if (resultTask == delay)
+            {
+                tcs.TrySetException(new TimeoutException());
+            }
+
+            return tcs.Task.Result;
+        }
     }
 }

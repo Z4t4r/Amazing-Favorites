@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Newbe.BookmarkManager.Services;
 using Newbe.BookmarkManager.Services.Configuration;
 using Newbe.BookmarkManager.Services.EventHubs;
+using Newbe.BookmarkManager.Services.Servers;
 using WebExtensions.Net.Tabs;
 
 namespace Newbe.BookmarkManager.Components
@@ -12,7 +13,8 @@ namespace Newbe.BookmarkManager.Components
     {
         [Inject] public ITabsApi Tabs { get; set; }
         [Inject] public IOptions<StaticUrlOptions> StaticUrlOptions { get; set; }
-        [Inject] public IBkManager BkManager { get; set; }
+        
+        [Inject] public IBkManagerClient BkManager { get; set; }
         [Inject] public IAfEventHub AfEventHub { get; set; }
         private bool _controlPanelVisible;
 

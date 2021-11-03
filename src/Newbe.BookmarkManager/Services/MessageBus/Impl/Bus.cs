@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Newbe.BookmarkManager.Services.MessageBus
@@ -20,19 +23,23 @@ namespace Newbe.BookmarkManager.Services.MessageBus
         private readonly IStorageApiWrapper _storageApiWrapper;
         private readonly ILifetimeScope _lifetimeScope;
         private readonly IClock _clock;
+        
+        private readonly IServiceProvider _serviceProvider;
 
         public Bus(
             BusOptions options,
             ILogger<Bus> logger,
             IStorageApiWrapper storageApiWrapper,
             ILifetimeScope lifetimeScope,
-            IClock clock)
+            IClock clock,
+            IServiceProvider serviceProvider)
         {
             _busOptions = options;
             _logger = logger;
             _storageApiWrapper = storageApiWrapper;
             _lifetimeScope = lifetimeScope;
             _clock = clock;
+            _serviceProvider = serviceProvider;
             MessageHandlerCollection = new MessageHandlerCollection(_clock);
         }
 
@@ -69,9 +76,23 @@ namespace Newbe.BookmarkManager.Services.MessageBus
                 }
             }
         }
+        public (BusMessage,MethodInfo) GetBusMessage<TContract>(string messageType,LPCRequest request)
+        {
+            using IServiceScope scope = _serviceProvider.CreateScope();
+            object service = scope.ServiceProvider.GetService<TContract>();
 
+            var method = GetUnambiguousMethod(request, service);
+            var channelMessage = new BusMessage
+            {
+                MessageId = RandomIdHelper.GetId(),
+                MessageType = messageType + "-" + method.Name + "-"+method.ReturnType.Name,
+                PayloadJson = JsonSerializer.Serialize((object)request)
+            };
+            return (channelMessage,method);
+        }
         public void RegisterHandler(string messageType, RequestHandlerDelegate handler, string? messageId = null)
         {
+            _logger.LogInformation($"Bus_RegisterHandler_MessageType={messageType}_MessageId={messageId}");
             var eventName = messageType;
             if (string.IsNullOrEmpty(messageId))
             {
@@ -107,6 +128,103 @@ namespace Newbe.BookmarkManager.Services.MessageBus
             {
                 // ignore
             }
+        }
+
+        private static MethodInfo GetUnambiguousMethod(LPCRequest request, object service)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (service is null)
+            {
+                throw new ArgumentNullException(nameof(service));
+            }
+
+            MethodInfo method = null;     // disambiguate - can't just call as before with generics - MethodInfo method = service.GetType().GetMethod(request.MethodName);
+
+            Type[] types = service.GetType().GetInterfaces();
+
+            IEnumerable<MethodInfo> allMethods = types.SelectMany(t => t.GetMethods());
+
+            var serviceMethods = allMethods.Where(t => t.Name == request.MethodName).ToList();
+            
+            object[] requestParameters = request.Parameters?.ToArray() ?? Array.Empty<object>();
+            Type[] requestGenericArguments;
+            if (request.GenericArguments != null)
+            {
+                // Generic arguments passed by Type
+                requestGenericArguments = request.GenericArguments.ToArray();
+            }
+            else if (request.GenericArgumentsByName != null)
+            {
+                // Generic arguments passed by name
+                requestGenericArguments = new Type[request.GenericArgumentsByName.Count()];
+                int i = 0;
+                foreach (var pair in request.GenericArgumentsByName)
+                {
+                    var a = Assembly.Load(pair.AssemblyName);
+                    requestGenericArguments[i++] = a.GetType(pair.ParameterType);
+                }
+            }
+            else
+            {
+                requestGenericArguments = Array.Empty<Type>();
+            }
+
+            Type[] requestParameterTypes;
+            if (request.ParameterTypes != null)
+            {
+                // Parameter types passed by Type
+                requestParameterTypes = request.ParameterTypes.ToArray();
+            }
+            else if (request.ParameterTypesByName != null)
+            {
+                // Parameter types passed by name
+                requestParameterTypes = new Type[request.ParameterTypesByName.Count()];
+                int i = 0;
+                foreach (var pair in request.ParameterTypesByName)
+                {
+                    var a = Assembly.Load(pair.AssemblyName);
+                    requestParameterTypes[i++] = a.GetType(pair.ParameterType);
+                }
+            }
+            else
+            {
+                requestParameterTypes = Array.Empty<Type>();
+            }
+            foreach (MethodInfo serviceMethod in serviceMethods)
+            {
+                ParameterInfo[] serviceMethodParameters = serviceMethod.GetParameters();
+                int parameterTypeMatches = 0;
+
+                if (serviceMethodParameters.Length == requestParameters.Length && serviceMethod.GetGenericArguments().Length == requestGenericArguments.Length)
+                {
+                    for (int parameterIndex = 0; parameterIndex < serviceMethodParameters.Length; parameterIndex++)
+                    {
+                        Type serviceParameterType = serviceMethodParameters[parameterIndex].ParameterType.IsGenericParameter ?
+                            requestGenericArguments[serviceMethodParameters[parameterIndex].ParameterType.GenericParameterPosition] :
+                            serviceMethodParameters[parameterIndex].ParameterType;
+
+                        if (serviceParameterType == requestParameterTypes[parameterIndex])
+                        {
+                            parameterTypeMatches++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    if (parameterTypeMatches == serviceMethodParameters.Length)
+                    {
+                        method = serviceMethod;        // signatures match so assign
+                        break;
+                    }
+                }
+            }
+            return method;
         }
     }
 }
