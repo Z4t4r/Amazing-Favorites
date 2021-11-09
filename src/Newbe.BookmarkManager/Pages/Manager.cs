@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using AntDesign;
 using Microsoft.AspNetCore.Components;
@@ -16,6 +14,8 @@ using Newbe.BookmarkManager.Components;
 using Newbe.BookmarkManager.Services;
 using Newbe.BookmarkManager.Services.Configuration;
 using Newbe.BookmarkManager.Services.EventHubs;
+using Newbe.BookmarkManager.Services.LPC;
+using Newbe.BookmarkManager.Services.Servers;
 using Newbe.BookmarkManager.Services.SimpleData;
 using WebExtensions.Net.Tabs;
 
@@ -23,7 +23,7 @@ namespace Newbe.BookmarkManager.Pages
 {
     public partial class Manager : IAsyncDisposable
     {
-        [Inject] public IBkSearcher BkSearcher { get; set; }
+        [Inject] public ILPCClient<IBkSearcherServer> Client { get; set; }
         [Inject] public IBkManager BkManager { get; set; }
         [Inject] public ITagsManager TagsManager { get; set; }
         [Inject] public IJSRuntime JsRuntime { get; set; }
@@ -106,6 +106,8 @@ namespace Newbe.BookmarkManager.Pages
         {
             await base.OnInitializedAsync();
             _userOptions = await UserOptionsService.GetOptionsAsync();
+
+            await Client.StartAsync();
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -119,6 +121,7 @@ namespace Newbe.BookmarkManager.Pages
                 _searchSubject
                     .Throttle(TimeSpan.FromMilliseconds(100))
                     .Select(x => x?.Trim())
+                    // ReSharper disable once AsyncVoidLambda
                     .Subscribe(async args =>
                     {
                         _searchInputLoading = true;
@@ -140,8 +143,12 @@ namespace Newbe.BookmarkManager.Pages
                                 }
                             }
 
-                            var target = await BkSearcher.Search(args!, _resultLimit);
-                            _targetBks = Map(target);
+                            var target = await Client.InvokeAsync<BkSearchRequest, BkSearchResponse>(new BkSearchRequest
+                            {
+                                SearchText = args!,
+                                Limit = _resultLimit
+                            });
+                            _targetBks = Map(target.ResultItems);
                         }
                         catch (Exception e)
                         {
@@ -243,8 +250,6 @@ namespace Newbe.BookmarkManager.Pages
                 var (tabId, clickTime) = await SimpleDataStorage.GetOrDefaultAsync<LastUserClickIconTabData>();
                 if (Clock.UtcNow - clickTime < TimeSpan.FromSeconds(30).TotalSeconds)
                 {
-                    Logger.LogInformation("{sss}", tabId);
-                    Logger.LogInformation("{sss}", clickTime);
                     if (tabId > 0)
                     {
                         var tab = await WebExtensions.Tabs.Get(tabId);
@@ -258,6 +263,15 @@ namespace Newbe.BookmarkManager.Pages
                     }
                 }
 
+                await WebExtensions.Tabs.OnUpdated.AddListener(async (tabId, changeInfo, tab) =>
+                {
+                    await BkManager.AddClickAsync(changeInfo.Url, 1);
+                    await InvokeAsync(() =>
+                    {
+                        SearchValue = _searchValue;
+                        StateHasChanged();
+                    });
+                });
                 await ManagePageNotificationService.RunAsync();
                 AfEventHub.RegisterHandler<UserOptionSaveEvent>(HandleUserOptionSaveEvent);
                 AfEventHub.RegisterHandler<TriggerEditBookmarkEvent>(HandleTriggerEditBookmarkEvent);
@@ -421,6 +435,11 @@ namespace Newbe.BookmarkManager.Pages
             {
                 _isFormLoading = false;
             }
+        }
+
+        private void OnSharingButton()
+        {
+            OnClickSharing(BkEditFormData.Url);
         }
 
         private async Task OnClickModalSaveAsync()

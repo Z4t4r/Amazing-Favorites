@@ -72,6 +72,12 @@ namespace Newbe.BookmarkManager.Services
                 Enabled = false
             };
 
+            options.OmniboxSuggestFeature ??= new OmniboxSuggestFeature
+            {
+                Enabled = true,
+                SuggestCount = Consts.Omnibox.SuggestDefault
+            };
+
             return options;
         }
     }

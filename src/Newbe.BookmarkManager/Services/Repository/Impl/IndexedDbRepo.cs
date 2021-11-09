@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.EventHubs;
 using TG.Blazor.IndexedDB;
 
 namespace Newbe.BookmarkManager.Services
@@ -13,29 +16,48 @@ namespace Newbe.BookmarkManager.Services
     {
         private readonly ILogger<IndexedDbRepo<T, TKey>> _logger;
         private readonly IndexedDBManager _indexedDbManager;
+        private readonly ISmallCache _smallCache;
+        private readonly IAfEventHub _afEventHub;
+        private readonly IClock _clock;
         private readonly string _storeName;
+        private readonly Subject<long> _smallCacheRemoveSubject = new();
 
         public IndexedDbRepo(
             ILogger<IndexedDbRepo<T, TKey>> logger,
-            IndexedDBManager indexedDbManager)
+            IndexedDBManager indexedDbManager,
+            ISmallCache smallCache,
+            IAfEventHub afEventHub,
+            IClock clock)
         {
             _logger = logger;
             _indexedDbManager = indexedDbManager;
+            _smallCache = smallCache;
+            _afEventHub = afEventHub;
+            _clock = clock;
             _storeName = TableNameCache.StoreName;
+            _smallCacheRemoveSubject.Throttle(TimeSpan.FromSeconds(1))
+                .Subscribe(OnNext);
         }
 
-        private bool _cacheInvalid = true;
-        private List<T> _cache = new();
+        private void OnNext(long time)
+        {
+            _afEventHub.PublishAsync(new SmallCacheExpiredEvent
+            {
+                CacheKey = _cacheKey
+            });
+        }
+
+        private readonly string _cacheKey = $"IndexedDbRepoCache_{typeof(T).Name}";
 
         public virtual async Task<List<T>> GetAllAsync()
         {
-            if (_cacheInvalid)
+            if (!_smallCache.TryGetValue<List<T>>(_cacheKey, out var cache))
             {
-                _cache = await _indexedDbManager.GetRecords<T>(_storeName);
-                _cacheInvalid = false;
+                cache = await _indexedDbManager.GetRecords<T>(_storeName);
+                _smallCache.Set(_cacheKey, cache);
             }
 
-            return _cache;
+            return cache!;
         }
 
         public virtual async Task UpsertAsync(T entity)
@@ -66,7 +88,8 @@ namespace Newbe.BookmarkManager.Services
             }
             finally
             {
-                _cacheInvalid = true;
+                _smallCache.Remove(_cacheKey);
+                _smallCacheRemoveSubject.OnNext(_clock.UtcNow);
             }
         }
 
@@ -88,7 +111,8 @@ namespace Newbe.BookmarkManager.Services
             }
             finally
             {
-                _cacheInvalid = true;
+                _smallCache.Remove(_cacheKey);
+                _smallCacheRemoveSubject.OnNext(_clock.UtcNow);
             }
         }
 
@@ -107,7 +131,8 @@ namespace Newbe.BookmarkManager.Services
             }
             finally
             {
-                _cacheInvalid = true;
+                _smallCache.Remove(_cacheKey);
+                _smallCacheRemoveSubject.OnNext(_clock.UtcNow);
             }
         }
 

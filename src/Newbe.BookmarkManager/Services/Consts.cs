@@ -6,16 +6,24 @@ namespace Newbe.BookmarkManager.Services
     public static class Consts
     {
         public const string AppName = "Amazing Favorites";
-        public const string CurrentVersion = "0.7.0";
+        public const string CurrentVersion = "0.7.1";
         public const string PrivacyAgreementVersionDate = "2021/08/29";
 
         public static readonly string[] Versions =
         {
             CurrentVersion,
+            "0.7.0",
             "0.6.3",
             "0.6.2",
             "0.6.1"
         };
+
+        public static class Omnibox
+        {
+            public const int SuggestMax = 6;
+            public const int SuggestMin = 1;
+            public const int SuggestDefault = 3;
+        }
 
         public const int JwtExpiredWarningDays = 7;
 
@@ -56,6 +64,13 @@ namespace Newbe.BookmarkManager.Services
             "Favorites bar",
             "Other favorites"
         };
+
+        public static class BusEnvelopNames
+        {
+            public const string AfEvent = "afEvent";
+            public const string LPCServer = "lpc";
+        }
+
 
         public static bool IsReservedBookmarkFolder(string title)
         {
