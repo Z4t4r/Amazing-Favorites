@@ -72,9 +72,10 @@ namespace Newbe.BookmarkManager.Services
                 Enabled = false
             };
 
-            options.BackgroundImageFeature ??= new BackgroundImageFeature
+            options.OmniboxSuggestFeature ??= new OmniboxSuggestFeature
             {
-                Enabled = false
+                Enabled = true,
+                SuggestCount = Consts.Omnibox.SuggestDefault
             };
 
             return options;

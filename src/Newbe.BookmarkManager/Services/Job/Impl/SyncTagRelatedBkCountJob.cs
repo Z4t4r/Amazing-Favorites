@@ -25,7 +25,7 @@ namespace Newbe.BookmarkManager.Services
             _tagsManager = tagsManager;
         }
 
-        public async ValueTask StartAsync()
+        public ValueTask StartAsync()
         {
             await Task.Delay(TimeSpan.FromSeconds(10));
             _jobHandler = new[] { 1L }.ToObservable()
@@ -46,6 +46,7 @@ namespace Newbe.BookmarkManager.Services
                 }))
                 .Concat()
                 .Subscribe();
+            return ValueTask.CompletedTask;
         }
 
         private async Task RunSyncAsync()

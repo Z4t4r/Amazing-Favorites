@@ -16,7 +16,7 @@ namespace Newbe.BookmarkManager.Services
         public HotTagsFeature? HotTagsFeature { get; set; }
         public ApplicationInsightFeature? ApplicationInsightFeature { get; set; }
 
-        public BackgroundImageFeature? BackgroundImageFeature { get; set; }
+        public OmniboxSuggestFeature? OmniboxSuggestFeature { get; set; }
     }
 
     public record PinyinFeature
@@ -56,9 +56,16 @@ namespace Newbe.BookmarkManager.Services
         public bool Enabled { get; set; }
     }
 
-    public record BackgroundImageFeature
+    public record OmniboxSuggestFeature
     {
         public bool Enabled { get; set; }
-        public string? BaseUrl { get; set; }
+        private int _suggestCount;
+
+        public int SuggestCount
+        {
+            get =>
+                _suggestCount;
+            set => _suggestCount = Math.Clamp(value, Consts.Omnibox.SuggestMin, Consts.Omnibox.SuggestMax);
+        }
     }
 }
