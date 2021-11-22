@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Newbe.BookmarkManager.Services.LPC;
 
 namespace Newbe.BookmarkManager.Services.MessageBus
 {
@@ -8,5 +9,9 @@ namespace Newbe.BookmarkManager.Services.MessageBus
         Task EnsureStartAsync();
         void RegisterHandler(string messageType, RequestHandlerDelegate handler, string? messageId = null);
         Task SendMessage(BusMessage message);
+
+        Task<TResponse> SendRequest<TResponse>(IpcRequest request);
+
+
     }
 }

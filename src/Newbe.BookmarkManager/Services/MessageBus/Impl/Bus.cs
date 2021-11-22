@@ -4,7 +4,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Newbe.BookmarkManager.Services.LPC;
 
 namespace Newbe.BookmarkManager.Services.MessageBus
 {
@@ -19,19 +21,23 @@ namespace Newbe.BookmarkManager.Services.MessageBus
         private readonly IStorageApiWrapper _storageApiWrapper;
         private readonly ILifetimeScope _lifetimeScope;
         private readonly IClock _clock;
+        
+        private readonly IServiceProvider _serviceProvider;
 
         public Bus(
             BusOptions options,
             ILogger<Bus> logger,
             IStorageApiWrapper storageApiWrapper,
             ILifetimeScope lifetimeScope,
-            IClock clock)
+            IClock clock,
+            IServiceProvider serviceProvider)
         {
             _busOptions = options;
             _logger = logger;
             _storageApiWrapper = storageApiWrapper;
             _lifetimeScope = lifetimeScope;
             _clock = clock;
+            _serviceProvider = serviceProvider;
             MessageHandlerCollection = new MessageHandlerCollection(_clock);
             BusId = RandomIdHelper.GetId();
         }
@@ -110,6 +116,49 @@ namespace Newbe.BookmarkManager.Services.MessageBus
             {
                 // ignore
             }
+        }
+        
+        
+        public async Task<TResponse> SendRequest<TResponse>(
+            IpcRequest request)
+            where TResponse : IResponse
+        {
+            var requestTypeName = request.MethodName + ;
+            var responseTypeName = typeof(TResponse).Name;
+
+            var channelMessage = new BusMessage
+            {
+                MessageId = RandomIdHelper.GetId(),
+                MessageType = requestTypeName,
+                PayloadJson = JsonSerializer.Serialize((object)request)
+            };
+            var tcs = new TaskCompletionSource<TResponse>();
+            RegisterHandler(responseTypeName, (scope, responseMessage) =>
+            {
+                if (responseMessage.ParentMessageId == channelMessage.MessageId)
+                {
+                    var payloadJson = responseMessage.PayloadJson;
+                    if (string.IsNullOrEmpty(payloadJson))
+                    {
+                        return false;
+                    }
+
+                    var result = (TResponse)JsonSerializer.Deserialize(payloadJson, typeof(TResponse))!;
+                    tcs.TrySetResult(result);
+                    return true;
+                }
+
+                return false;
+            }, channelMessage.MessageId);
+            await SendMessage(channelMessage);
+            var delay = Task.Delay(TimeSpan.FromSeconds(Bus.DefaultExpiredDuration));
+            var resultTask = await Task.WhenAny(delay, tcs.Task);
+            if (resultTask == delay)
+            {
+                tcs.TrySetException(new TimeoutException());
+            }
+
+            return tcs.Task.Result;
         }
     }
 }
