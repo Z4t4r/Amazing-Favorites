@@ -10,7 +10,7 @@ namespace Newbe.BookmarkManager.Services.MessageBus
         void RegisterHandler(string messageType, RequestHandlerDelegate handler, string? messageId = null);
         Task SendMessage(BusMessage message);
 
-        Task<TResponse> SendRequest<TResponse>(IpcRequest request);
+        Task<IpcResponse> SendRequest(IpcRequest request);
 
 
     }

@@ -39,6 +39,11 @@ namespace Newbe.BookmarkManager.Services.LPC
         [DataMember]
         public IEnumerable<Type> GenericArguments { get; set; }
     }
+
+    public record IpcResponse
+    {
+        
+    }
     
     public class IpcProxy : DispatchProxy
     {

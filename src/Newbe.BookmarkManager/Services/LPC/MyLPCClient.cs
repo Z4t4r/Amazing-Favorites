@@ -27,21 +27,14 @@ public abstract class MyLPCClient<TInterface> : IMyLPCClient<TInterface>
     }
     
     
-    public Task<TResult> InvokeAsync<TResult>(Expression<Func<TInterface, TResult>> exp,
+    public async Task<TResult> InvokeAsync<TResult>(Expression<Func<TInterface, TResult>> exp,
         CancellationToken cancellationToken = default)
     {
         var request = GetRequest(exp, DispatchProxy.Create<TInterface, IpcProxy<TResult>>());
-        
-        var response = await _bus.SendRequest<>()
-        //var response = await GetResponseAsync(request, cancellationToken).ConfigureAwait(false);
 
-        if (!response.Succeed())
-        {
-            throw response.CreateFaultException();
-        }
-        
+        var response = await _bus.SendRequest(request);
 
-        return (TResult)@return;
+        return response;
     }
     
     

@@ -119,12 +119,11 @@ namespace Newbe.BookmarkManager.Services.MessageBus
         }
         
         
-        public async Task<TResponse> SendRequest<TResponse>(
+        public async Task<IpcResponse> SendRequest(
             IpcRequest request)
-            where TResponse : IResponse
         {
-            var requestTypeName = request.MethodName + ;
-            var responseTypeName = typeof(TResponse).Name;
+            var requestTypeName = request.MethodName ;
+            var responseTypeName = nameof(IpcResponse);
 
             var channelMessage = new BusMessage
             {
@@ -132,7 +131,7 @@ namespace Newbe.BookmarkManager.Services.MessageBus
                 MessageType = requestTypeName,
                 PayloadJson = JsonSerializer.Serialize((object)request)
             };
-            var tcs = new TaskCompletionSource<TResponse>();
+            var tcs = new TaskCompletionSource<IpcResponse>();
             RegisterHandler(responseTypeName, (scope, responseMessage) =>
             {
                 if (responseMessage.ParentMessageId == channelMessage.MessageId)
@@ -143,7 +142,7 @@ namespace Newbe.BookmarkManager.Services.MessageBus
                         return false;
                     }
 
-                    var result = (TResponse)JsonSerializer.Deserialize(payloadJson, typeof(TResponse))!;
+                    var result = (IpcResponse)JsonSerializer.Deserialize(payloadJson, typeof(IpcResponse))!;
                     tcs.TrySetResult(result);
                     return true;
                 }
